@@ -3,6 +3,14 @@ import { useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import axios from "axios";
 
+const CATEGORIAS_ROBOT = [
+  { value: "MINISUMO", label: "MINISUMO" },
+  { value: "MICROSUMO", label: "MICROSUMO" },
+  { value: "MEGASUMO", label: "MEGASUMO" },
+  { value: "DRONE", label: "DRONE" },
+  { value: "FOLLOWER", label: "FOLLOWER" }
+];
+
 export default function AdminCategoriasTorneo() {
 
   const { idTorneo } = useParams();
@@ -69,7 +77,14 @@ export default function AdminCategoriasTorneo() {
   // ==================================================
   const guardar = async () => {
     try {
-
+      if (!editingId && categorias.some(c => c.categoria === form.categoria)) {
+          Swal.fire(
+            "Categoría duplicada",
+            "Esta categoría ya existe en el torneo",
+            "warning"
+          );
+          return;
+        }
       const payload =
         form.modalidad === "INDIVIDUAL"
           ? {
@@ -171,7 +186,11 @@ export default function AdminCategoriasTorneo() {
           ) : (
             categorias.map(c => (
               <tr key={c.idCategoriaTorneo}>
-                <td>{c.categoria}</td>
+                <td>
+                  <span className="badge bg-info text-dark px-3 py-2">
+                    {c.categoria}
+                  </span>
+                </td>
                 <td>{c.modalidad}</td>
 
                 <td>
@@ -228,12 +247,20 @@ export default function AdminCategoriasTorneo() {
 
               <h4>{editingId ? "Editar Categoría" : "Crear Categoría"}</h4>
 
-              <input
-                className="form-control mt-2"
-                placeholder="Nombre categoría"
-                value={form.categoria}
-                onChange={e => setForm({ ...form, categoria: e.target.value })}
-              />
+              <label className="mt-2 fw-bold">Categoría</label>
+                <select
+                  className="form-control"
+                  value={form.categoria}
+                  onChange={e => setForm({ ...form, categoria: e.target.value })}
+                >
+                  <option value="">Seleccione categoría</option>
+
+                  {CATEGORIAS_ROBOT.map(cat => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
 
               <textarea
                 className="form-control mt-2"

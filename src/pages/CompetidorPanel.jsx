@@ -7,7 +7,8 @@ export default function CompetidorPanel() {
   const items = [
     { label: "Mis Robots", to: "robots" },
     { label: "Mis Torneos", to: "torneos" },
-    { label: "Ranking", to: "ranking" }
+    { label: "Ranking", to: "ranking" },
+    { label: "Inscripciones", to: "inscripciones"}
   ];
 
   return (

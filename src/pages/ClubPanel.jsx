@@ -8,7 +8,8 @@ export default function ClubPanel() {
     { label: "Mis Competidores", to: "competidores" },
     { label: "Mis Robots", to: "robots" },
     { label: "Transferencias", to: "transferencias" },
-    { label: "Torneos Disponibles", to: "torneos" }
+    { label: "Torneos Disponibles", to: "torneos" },
+    {label: "Inscripciones", to: "inscripciones"}
   ];
 
   return (

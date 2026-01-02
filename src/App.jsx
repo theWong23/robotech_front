@@ -32,13 +32,15 @@ import ClubDashboard from "./pages/club/ClubDashboard";
 import ClubCompetidores from "./pages/club/ClubCompetidores";
 import ClubRobots from "./pages/club/ClubRobots";
 import ClubTorneos from "./pages/club/ClubTorneos";
-import ClubCategoriasTorneo from "./pages/club/ClubInscribirEquipo";
-import ClubInscribirEquipo from "./pages/club/ClubInscribirEquipo";
+import ClubCategoriasTorneo from "./pages/club/ClubCategoriasTorneo";
+import ClubInscribir from "./pages/club/ClubInscribir";
+import ClubInscripciones from "./pages/club/ClubInscripciones";
 
 // ===== COMPETIDORES =====
 import CompetidorPanel from "./pages/CompetidorPanel";
 import CompetidorDashboard from "./pages/Competidores/CompetidorDashboard";
 import CompetidorRobots from "./pages/CompetidorRobots";
+import CompetidorInscripciones from "./pages/Competidores/CompetidorInscripciones";
 
 // ===== JUECES =====
 import JuezPanel from "./pages/JuezPanel";
@@ -89,13 +91,14 @@ function App() {
           <Route path="competidores" element={<ClubCompetidores />} />
           <Route path="robots" element={<ClubRobots />} />
           <Route path="torneos" element={<ClubTorneos />} />
+          <Route path="inscripciones" element={<ClubInscripciones />} />
           <Route
             path="torneos/:idTorneo/categorias"
             element={<ClubCategoriasTorneo />}
           />
           <Route
-            path="categorias/:idCategoria/inscribir"
-            element={<ClubInscribirEquipo />}
+            path="torneos/:idTorneo/categorias/:idCategoriaTorneo/inscribir"
+            element={<ClubInscribir />}
           />
         </Route>
 
@@ -104,6 +107,7 @@ function App() {
           <Route index element={<Navigate to="dashboard" />} />
           <Route path="dashboard" element={<CompetidorDashboard />} />
           <Route path="robots" element={<CompetidorRobots />} />
+          <Route path="inscripciones" element={<CompetidorInscripciones />} />
         </Route>
 
         {/* ================= JUECES ================= */}

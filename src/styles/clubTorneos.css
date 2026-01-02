@@ -1,0 +1,33 @@
+.torneo-card {
+  position: relative;
+  background: #fff;
+  border-radius: 16px;
+  padding: 2px; /* espacio para el borde */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.torneo-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: linear-gradient(
+    135deg,
+    #0bbcd6,
+    #20c997,
+    #0bbcd6
+  );
+  z-index: 0;
+}
+
+.torneo-card .card-body {
+  position: relative;
+  z-index: 1;
+  background: #ffffff;
+  border-radius: 14px;
+}
+
+.torneo-card:hover {
+  transform: translateY(-4px);
+  transition: all 0.25s ease;
+}

@@ -3,50 +3,68 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export default function ClubCategoriasTorneo() {
-
   const { idTorneo } = useParams();
   const [categorias, setCategorias] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get(`http://localhost:8080/api/admin/torneos/${idTorneo}/categorias`)
-      .then(res => setCategorias(res.data))
+    axios
+      .get(`http://localhost:8080/api/admin/torneos/${idTorneo}/categorias`)
+      .then((res) => setCategorias(res.data))
       .catch(() => alert("Error cargando categorías"));
   }, [idTorneo]);
 
   return (
     <div className="container mt-4">
-      <h3>Categorías del Torneo</h3>
+      {/* Header */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="fw-bold">Categorías del Torneo</h2>
+        <button
+          className="btn btn-outline-secondary"
+          onClick={() => navigate(-1)}
+        >
+          ← Volver
+        </button>
+      </div>
 
-      <table className="table table-dark table-bordered mt-3">
-        <thead>
-          <tr>
-            <th>Categoría</th>
-            <th>Max equipos</th>
-            <th>Max integrantes</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {categorias.map(c => (
-            <tr key={c.idCategoriaTorneo}>
-              <td>{c.categoria}</td>
-              <td>{c.maxParticipantes}</td>
-              <td>{c.maxIntegrantesEquipo}</td>
-              <td>
-                <button
-                  className="btn btn-success btn-sm"
-                  onClick={() =>
-                    navigate(`/club/categorias/${c.idCategoriaTorneo}/inscribir`)
-                  }
-                >
-                  Inscribir equipo
-                </button>
-              </td>
-            </tr>
+      {categorias.length === 0 ? (
+        <div className="alert alert-info text-center">
+          No hay categorías registradas para este torneo
+        </div>
+      ) : (
+        <div className="row g-4">
+          {categorias.map((c) => (
+            <div className="col-md-6 col-lg-4" key={c.idCategoriaTorneo}>
+              <div className="card h-100 shadow-sm border-0 categoria-card">
+                <div className="card-body d-flex flex-column">
+                  <h5 className="card-title fw-bold text-uppercase">
+                    {c.categoria}
+                  </h5>
+
+                  <p className="text-muted mb-2">
+                    Máx. equipos: <strong>{c.maxParticipantes}</strong>
+                  </p>
+                  <p className="text-muted mb-4">
+                    Máx. integrantes por equipo:{" "}
+                    <strong>{c.maxIntegrantesEquipo}</strong>
+                  </p>
+
+                  <button
+                    className="btn btn-success mt-auto w-100"
+                    onClick={() =>
+                      navigate(
+                        `/club/torneos/${idTorneo}/categorias/${c.idCategoriaTorneo}/inscribir`
+                      )
+                    }
+                  >
+                    Inscribir equipo
+                  </button>
+                </div>
+              </div>
+            </div>
           ))}
-        </tbody>
-      </table>
+        </div>
+      )}
     </div>
   );
 }

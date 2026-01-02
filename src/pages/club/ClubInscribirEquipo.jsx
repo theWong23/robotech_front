@@ -1,88 +1,113 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import Swal from "sweetalert2";
+import { inscribirEquipo } from "../../services/inscripcionService";
 import api from "../../services/axiosConfig";
 
-export default function ClubInscribirEquipo() {
-  const { idTorneo } = useParams();
-
-  const [categorias, setCategorias] = useState([]);
+export default function ClubInscribirEquipo({ categoria }) {
+  const [robots, setRobots] = useState([]);
+  const [seleccionados, setSeleccionados] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  const cargarCategorias = async () => {
+  // ✅ Blindaje: si categoria todavía no llegó
+  const maxIntegrantes = useMemo(() => {
+    const v = categoria?.maxIntegrantesEquipo;
+    // fallback razonable para que nunca sea undefined/null
+    return Number.isFinite(v) && v > 0 ? v : 1;
+  }, [categoria]);
+
+  useEffect(() => {
+    api.get("/api/club/robots")
+      .then((res) => setRobots(res.data))
+      .catch(() => Swal.fire("Error", "No se pudieron cargar los robots", "error"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const toggleRobot = (id) => {
+    if (seleccionados.includes(id)) {
+      setSeleccionados(seleccionados.filter((r) => r !== id));
+      return;
+    }
+
+    if (seleccionados.length >= maxIntegrantes) {
+      Swal.fire("Límite alcanzado", `Máximo ${maxIntegrantes} robots`, "warning");
+      return;
+    }
+
+    setSeleccionados([...seleccionados, id]);
+  };
+
+  console.log("Categoria enviada:", categoria);
+  console.log("ID categoria:", categoria?.idCategoriaTorneo);
+  console.log("Modalidad:", categoria?.modalidad);
+  const inscribir = async () => {
+    // ✅ No dejar inscribir si no hay categoria lista
+    if (!categoria?.idCategoriaTorneo) {
+      Swal.fire("Error", "No se pudo obtener la categoría", "error");
+      return;
+    }
+
+    if (seleccionados.length === 0) {
+      Swal.fire("Atención", "Selecciona al menos un robot", "warning");
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      const res = await api.get(`/api/club/torneos/${idTorneo}/categorias`);
-      setCategorias(Array.isArray(res.data) ? res.data : []);
+      await inscribirEquipo({
+        idCategoriaTorneo: categoria.idCategoriaTorneo,
+        robots: seleccionados,
+      });
+
+      Swal.fire("✔ Equipo inscrito", "Estado: pendiente", "success");
+      setSeleccionados([]);
     } catch (err) {
-      console.error(err);
-      setCategorias([]);
+      Swal.fire("Error", err?.response?.data ?? "No se pudo inscribir", "error");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  useEffect(() => {
-    cargarCategorias();
-  }, [idTorneo]);
-
-  if (loading) return <p>Cargando categorías...</p>;
+  // ✅ Render seguro si categoria no llegó aún
+  if (!categoria) {
+    return (
+      <div className="card p-4 shadow-sm">
+        <p className="text-muted mb-0">Cargando categoría...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mt-4">
-      <h2 className="fw-bold mb-4">🏆 Categorías del Torneo</h2>
+    <div className="card p-4 shadow-sm">
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h5 className="fw-bold mb-0">Inscripción por Equipos</h5>
+        <span className="badge bg-primary">
+          {seleccionados.length} / {maxIntegrantes}
+        </span>
+      </div>
 
-      {categorias.length === 0 ? (
-        <div className="alert alert-info">
-          No hay categorías registradas para este torneo
-        </div>
+      {loading ? (
+        <p>Cargando robots...</p>
+      ) : robots.length === 0 ? (
+        <p className="text-muted">No hay robots disponibles</p>
       ) : (
-        <div className="row g-4">
-          {categorias.map((cat) => (
-            <div
-              key={cat.idCategoriaTorneo}
-              className="col-md-6 col-lg-4"
-            >
-              <div className="card h-100 shadow-sm border-0">
-                <div className="card-body">
-                  <h5 className="card-title fw-bold">{cat.categoria}</h5>
-
-                  <span
-                    className={`badge mb-2 ${
-                      cat.modalidad === "EQUIPO"
-                        ? "bg-primary"
-                        : "bg-success"
-                    }`}
-                  >
-                    {cat.modalidad}
-                  </span>
-
-                  <p className="card-text mt-2 text-muted">
-                    {cat.descripcion || "Sin descripción"}
-                  </p>
-
-                  <ul className="list-group list-group-flush mb-3">
-                    {cat.maxParticipantes && (
-                      <li className="list-group-item px-0">
-                        👥 Máx. participantes:{" "}
-                        <strong>{cat.maxParticipantes}</strong>
-                      </li>
-                    )}
-                    {cat.maxEquipos && (
-                      <li className="list-group-item px-0">
-                        🤖 Máx. equipos:{" "}
-                        <strong>{cat.maxEquipos}</strong>
-                      </li>
-                    )}
-                  </ul>
-
-                  <button className="btn btn-outline-primary w-100">
-                    Inscribirse
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        robots.map((r) => (
+          <div key={r.idRobot} className="form-check">
+            <input
+              type="checkbox"
+              className="form-check-input"
+              checked={seleccionados.includes(r.idRobot)}
+              onChange={() => toggleRobot(r.idRobot)}
+              disabled={!seleccionados.includes(r.idRobot) && seleccionados.length >= maxIntegrantes}
+            />
+            <label className="form-check-label">{r.nombre}</label>
+          </div>
+        ))
       )}
+
+      <button className="btn btn-success mt-3" disabled={submitting} onClick={inscribir}>
+        {submitting ? "Inscribiendo..." : "Inscribir Equipo"}
+      </button>
     </div>
   );
-} 
+}
