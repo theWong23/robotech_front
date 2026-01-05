@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
-import axios from "axios";
+import api from "../../services/api";
 
 export default function AdminUsuarios() {
 
@@ -30,7 +30,7 @@ export default function AdminUsuarios() {
 
   const cargar = async () => {
     try {
-      const res = await axios.get("http://localhost:8080/api/admin/usuarios");
+      const res = await api.get("/api/admin/usuarios");
       setUsuarios(res.data);
     } catch (err) {
       Swal.fire("Error", "No se pudo cargar la lista de usuarios", "error");
@@ -57,7 +57,7 @@ export default function AdminUsuarios() {
   };
 
   // ============================
-  // ABRIR MODAL (CREAR)
+  // ABRIR MODAL
   // ============================
   const abrirCrear = () => {
     setForm({
@@ -79,10 +79,10 @@ export default function AdminUsuarios() {
 
     try {
       if (!editingId) {
-        await axios.post("http://localhost:8080/api/admin/usuarios", form);
+        await api.post("/api/admin/usuarios", form);
         Swal.fire("✔ Usuario creado", "", "success");
       } else {
-        await axios.put(`http://localhost:8080/api/admin/usuarios/${editingId}`, form);
+        await api.put(`/api/admin/usuarios/${editingId}`, form);
         Swal.fire("✔ Usuario editado", "", "success");
       }
 
@@ -90,7 +90,6 @@ export default function AdminUsuarios() {
       cargar();
 
     } catch (err) {
-      console.error(err);
       Swal.fire("Error", "No se pudo guardar", "error");
     }
   };
@@ -108,7 +107,7 @@ export default function AdminUsuarios() {
     if (!conf.isConfirmed) return;
 
     try {
-      await axios.delete(`http://localhost:8080/api/admin/usuarios/${id}`);
+      await api.delete(`/api/admin/usuarios/${id}`);
       Swal.fire("Eliminado", "", "success");
       cargar();
     } catch (err) {
@@ -121,9 +120,11 @@ export default function AdminUsuarios() {
   // ============================
   const cambiarEstado = async (id, estado) => {
     try {
-      await axios.put(`http://localhost:8080/api/admin/usuarios/${id}/estado`, estado, {
-        headers: { "Content-Type": "text/plain" }
-      });
+      await api.put(
+        `/api/admin/usuarios/${id}/estado`,
+        estado,
+        { headers: { "Content-Type": "text/plain" } }
+      );
       cargar();
     } catch (err) {
       Swal.fire("Error", "No se pudo cambiar el estado", "error");
@@ -131,7 +132,7 @@ export default function AdminUsuarios() {
   };
 
   // ============================
-  // CAMBIAR CONTRASEÑA
+  // CONTRASEÑA
   // ============================
   const abrirCambiarPass = (id) => {
     setPassId(id);
@@ -146,8 +147,8 @@ export default function AdminUsuarios() {
     }
 
     try {
-      await axios.put(
-        `http://localhost:8080/api/admin/usuarios/${passId}/password`,
+      await api.put(
+        `/api/admin/usuarios/${passId}/password`,
         newPass,
         { headers: { "Content-Type": "text/plain" } }
       );
@@ -190,128 +191,35 @@ export default function AdminUsuarios() {
               <td>{u.correo}</td>
               <td>{u.telefono}</td>
               <td>{u.rol}</td>
-
               <td>
-                {u.estado === "ACTIVO" ? (
-                  <span className="badge bg-success">ACTIVO</span>
-                ) : (
-                  <span className="badge bg-danger">INACTIVO</span>
-                )}
+                <span className={`badge ${u.estado === "ACTIVO" ? "bg-success" : "bg-danger"}`}>
+                  {u.estado}
+                </span>
               </td>
-
               <td>
-
-                <button
-                  className="btn btn-warning btn-sm me-2"
+                <button className="btn btn-warning btn-sm me-2"
                   onClick={() => {
                     setEditingId(u.idUsuario);
-                    setForm({
-                      correo: u.correo,
-                      telefono: u.telefono,
-                      rol: u.rol,
-                      estado: u.estado,
-                      contrasena: ""
-                    });
+                    setForm({ ...u, contrasena: "" });
                     setModal(true);
-                  }}
-                >
+                  }}>
                   Editar
                 </button>
 
-                <button
-                  className="btn btn-info btn-sm me-2"
-                  onClick={() => abrirCambiarPass(u.idUsuario)}
-                >
+                <button className="btn btn-info btn-sm me-2"
+                  onClick={() => abrirCambiarPass(u.idUsuario)}>
                   Contraseña
                 </button>
 
-                <button
-                  className={`btn btn-${u.estado === "ACTIVO" ? "secondary" : "success"} btn-sm me-2`}
-                  onClick={() => cambiarEstado(u.idUsuario, u.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO")}
-                >
-                  {u.estado === "ACTIVO" ? "Desactivar" : "Activar"}
-                </button>
-
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => eliminar(u.idUsuario)}
-                >
+                <button className="btn btn-danger btn-sm"
+                  onClick={() => eliminar(u.idUsuario)}>
                   Eliminar
                 </button>
-
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-
-
-      {/* MODAL CREAR / EDITAR */}
-      {modal && (
-        <div className="modal fade show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog">
-            <div className="modal-content p-3">
-
-              <h4>{editingId ? "Editar Usuario" : "Crear Usuario"}</h4>
-
-              <input className="form-control mt-2" placeholder="Correo"
-                value={form.correo} onChange={e => setForm({ ...form, correo: e.target.value })} />
-
-              <input className="form-control mt-2" placeholder="Teléfono (9 dígitos)"
-                value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} />
-
-              {!editingId && (
-                <input type="password" className="form-control mt-2" placeholder="Contraseña"
-                  value={form.contrasena} onChange={e => setForm({ ...form, contrasena: e.target.value })} />
-              )}
-
-              <select className="form-control mt-2"
-                value={form.rol} onChange={e => setForm({ ...form, rol: e.target.value })}>
-                <option value="">Seleccione un rol</option>
-                <option value="ADMINISTRADOR">ADMINISTRADOR</option>
-                <option value="SUBADMINISTRADOR">SUBADMINISTRADOR</option>
-                <option value="JUEZ">JUEZ</option>
-                <option value="CLUB">CLUB</option>
-                <option value="COMPETIDOR">COMPETIDOR</option>
-              </select>
-
-              <div className="mt-3 d-flex justify-content-end gap-2">
-                <button className="btn btn-secondary" onClick={() => setModal(false)}>Cancelar</button>
-                <button className="btn btn-success" onClick={guardar}>Guardar</button>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
-
-
-      {/* MODAL CAMBIAR CONTRASEÑA */}
-      {modalPass && (
-        <div className="modal fade show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog">
-            <div className="modal-content p-3">
-
-              <h4>Cambiar Contraseña</h4>
-
-              <input
-                type="password"
-                className="form-control mt-2"
-                placeholder="Nueva contraseña"
-                value={newPass}
-                onChange={(e) => setNewPass(e.target.value)}
-              />
-
-              <div className="mt-3 d-flex justify-content-end gap-2">
-                <button className="btn btn-secondary" onClick={() => setModalPass(false)}>Cancelar</button>
-                <button className="btn btn-success" onClick={guardarPass}>Guardar</button>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }

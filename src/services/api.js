@@ -1,6 +1,19 @@
-const API_URL = "http://localhost:8080/api";
+import axios from "axios";
 
-export async function getSaludo() {
-    const response = await fetch(`${API_URL}/saludo`);
-    return response.text();
-}
+const api = axios.create({
+  baseURL: "http://localhost:8080",
+});
+
+// 🔥 INTERCEPTOR: añade token automáticamente
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+export default api;
