@@ -18,7 +18,7 @@ export default function AdminLogin() {
 
     try {
       const res = await axios.post(
-        "http://localhost:8080/api/admin/login",
+        "http://localhost:8080/api/usuarios/login",
         { correo, contrasena }
       );
 
@@ -35,7 +35,7 @@ export default function AdminLogin() {
         text: `${res.data.usuario.correo} (${res.data.rol})`
       });
 
-      if (res.data.rol === "ADMINISTRADOR") {
+      if (res.data.rol === "ADMIN") {
         window.location.href = "/admin";
       } else {
         window.location.href = "/subadmin";

@@ -1,10 +1,11 @@
 import { Outlet } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
+import Sidebar from "../../components/Sidebar";
+import Navbar from "../../components/Navbar";
 
 export default function CompetidorPanel() {
 
   const items = [
+    { label: "Mi perfil", to: "dashboard" },
     { label: "Mis Robots", to: "robots" },
     { label: "Mis Torneos", to: "torneos" },
     { label: "Ranking", to: "ranking" },

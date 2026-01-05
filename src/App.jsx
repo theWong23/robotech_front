@@ -14,7 +14,7 @@ import Robots from "./pages/Robots";
 import Rankings from "./pages/Rankings";
 
 // ===== ADMIN =====
-import AdminPanel from "./pages/AdminPanel";
+import AdminPanel from "./pages/admin/AdminPanel";
 import AdminUsuarios from "./pages/admin/AdminUsuarios";
 import AdminClubes from "./pages/admin/AdminClubes";
 import AdminJueces from "./pages/admin/AdminJueces";
@@ -26,11 +26,11 @@ import AdminGenerarEncuentros from "./pages/admin/AdminGenerarEncuentros";
 import AdminRobots from "./pages/admin/AdminRobots";
 
 // ===== SUBADMIN =====
-import SubAdminPanel from "./pages/SubAdminPanel";
+import SubAdminPanel from "./pages/subadmin/SubAdminPanel";
 import SubAdminDashboard from "./pages/subadmin/SubAdminDashboard";
 
 // ===== CLUB =====
-import ClubPanel from "./pages/ClubPanel";
+import ClubPanel from "./pages/club/ClubPanel";
 import ClubDashboard from "./pages/club/ClubDashboard";
 import ClubCompetidores from "./pages/club/ClubCompetidores";
 import ClubRobots from "./pages/club/ClubRobots";
@@ -40,13 +40,13 @@ import ClubInscribir from "./pages/club/ClubInscribir";
 import ClubInscripciones from "./pages/club/ClubInscripciones";
 
 // ===== COMPETIDORES =====
-import CompetidorPanel from "./pages/CompetidorPanel";
+import CompetidorPanel from "./pages/Competidores/CompetidorPanel";
 import CompetidorDashboard from "./pages/Competidores/CompetidorDashboard";
-import CompetidorRobots from "./pages/CompetidorRobots";
+import CompetidorRobots from "./pages/Competidores/CompetidorRobots";
 import CompetidorInscripciones from "./pages/Competidores/CompetidorInscripciones";
 
 // ===== JUECES =====
-import JuezPanel from "./pages/JuezPanel";
+import JuezPanel from "./pages/Jueces/JuezPanel";
 import JuezDashboard from "./pages/jueces/JuezDashboard";
 
 function App() {

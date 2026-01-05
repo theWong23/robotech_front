@@ -4,6 +4,38 @@ import Swal from "sweetalert2";
 
 export default function Register() {
 
+  const validarNombreHumano = (texto) => {
+    if (!texto) return "Este campo es obligatorio.";
+
+  const limpio = texto.trim();
+
+  // Solo letras y espacios
+  if (!/^[A-Za-zÁÉÍÓÚáéíóúñÑ ]+$/.test(limpio)) {
+    return "Solo se permiten letras y espacios.";
+  }
+
+  // Mínimo 5 letras totales (sin contar espacios)
+  const letras = limpio.replace(/\s+/g, "");
+  if (letras.length < 5) {
+    return "Debe tener al menos 5 letras.";
+  }
+
+  // Cada palabra mínimo 3 letras (Juan, María, Carlos)
+  const palabras = limpio.split(" ");
+  for (let p of palabras) {
+    if (p.length > 0 && p.length < 3) {
+      return "Cada nombre debe tener al menos 3 letras.";
+    }
+  }
+
+  // Debe contener al menos una vocal
+  if (!/[AEIOUÁÉÍÓÚaeiouáéíóú]/.test(limpio)) {
+    return "Debe contener al menos una vocal.";
+  }
+
+  return ""; 
+};
+
   // Paso 1 → validar código
   const [codigo, setCodigo] = useState("");
   const [codigoValido, setCodigoValido] = useState(false);
@@ -53,11 +85,7 @@ export default function Register() {
     }
 
     if (name === "nombres" || name === "apellidos") {
-      // permitir espacios y letras acentuadas
-      if (value && !/^[A-Za-zÁÉÍÓÚáéíóúñÑ ]+$/.test(value)) {
-        msg = "Solo se permiten letras y espacios.";
-      }
-      if (!value) msg = "Este campo es obligatorio.";
+      msg = validarNombreHumano(value);
     }
 
     if (name === "correo") {
@@ -112,19 +140,21 @@ export default function Register() {
     }
   };
 
-  // 🔥 REGISTRAR COMPETIDOR
+  // REGISTRAR COMPETIDOR
   const registrar = async (e) => {
     e.preventDefault();
 
     // VALIDACIONES FINALES (reafirmar)
     // nombres/apellidos
-    if (!/^[A-Za-zÁÉÍÓÚáéíóúñÑ ]+$/.test(form.nombres)) {
-      Swal.fire("Nombre inválido", "Solo se permiten letras.", "warning");
+    const errorNombre = validarNombreHumano(form.nombres);
+    if (errorNombre) {
+      Swal.fire("Nombre inválido", errorNombre, "warning");
       return;
     }
 
-    if (!/^[A-Za-zÁÉÍÓÚáéíóúñÑ ]+$/.test(form.apellidos)) {
-      Swal.fire("Apellido inválido", "Solo se permiten letras.", "warning");
+    const errorApellido = validarNombreHumano(form.apellidos);
+    if (errorApellido) {
+      Swal.fire("Apellido inválido", errorApellido, "warning");
       return;
     }
 
