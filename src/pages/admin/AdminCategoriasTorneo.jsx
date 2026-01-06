@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Swal from "sweetalert2";
-import axios from "axios";
+import api from "../../services/axiosConfig"; // ajusta la ruta
 
 const CATEGORIAS_ROBOT = [
   { value: "MINISUMO", label: "MINISUMO" },
@@ -12,7 +12,7 @@ const CATEGORIAS_ROBOT = [
 ];
 
 export default function AdminCategoriasTorneo() {
-
+  
   const { idTorneo } = useParams();
 
   const [torneo, setTorneo] = useState(null);
@@ -34,11 +34,11 @@ export default function AdminCategoriasTorneo() {
   // ==================================================
   const cargar = async () => {
     try {
-      const torneoRes = await axios.get(
+      const torneoRes = await api.get(
         `http://localhost:8080/api/admin/torneos/${idTorneo}`
       );
 
-      const categoriasRes = await axios.get(
+      const categoriasRes = await api.get(
         `http://localhost:8080/api/admin/categorias-torneo/${idTorneo}`
       );
 
@@ -102,13 +102,13 @@ export default function AdminCategoriasTorneo() {
             };
 
       if (!editingId) {
-        await axios.post(
+        await api.post(
           `http://localhost:8080/api/admin/categorias-torneo/${idTorneo}`,
           payload
         );
         Swal.fire("✔ Categoría creada", "", "success");
       } else {
-        await axios.put(
+        await api.put(
           `http://localhost:8080/api/admin/categorias-torneo/${editingId}`,
           payload
         );
@@ -137,7 +137,7 @@ export default function AdminCategoriasTorneo() {
     if (!confirm.isConfirmed) return;
 
     try {
-      await axios.delete(
+      await api.delete(
         `http://localhost:8080/api/admin/categorias-torneo/${id}`
       );
       Swal.fire("Eliminado", "", "success");

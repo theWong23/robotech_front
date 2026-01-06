@@ -16,7 +16,7 @@ export default function Register() {
 
   // Mínimo 5 letras totales (sin contar espacios)
   const letras = limpio.replace(/\s+/g, "");
-  if (letras.length < 5) {
+  if (letras.length < 3) {
     return "Debe tener al menos 5 letras.";
   }
 

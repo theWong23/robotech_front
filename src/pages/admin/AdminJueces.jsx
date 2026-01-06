@@ -251,6 +251,60 @@ export default function AdminJueces() {
           ))}
         </tbody>
       </table>
+      {modal && (
+  <div className="modal fade show d-block" style={{ background: "rgba(0,0,0,0.45)" }}>
+    <div className="modal-dialog">
+      <div className="modal-content p-3">
+
+        <h4>{editingId ? "Editar Juez" : "Crear Juez"}</h4>
+
+        <label className="mt-2">Correo</label>
+        <input
+          className="form-control"
+          value={form.correo}
+          onChange={e => setForm({ ...form, correo: e.target.value })}
+        />
+
+        <label className="mt-2">Teléfono</label>
+        <input
+          className="form-control"
+          value={form.telefono}
+          onChange={e => setForm({ ...form, telefono: e.target.value })}
+        />
+
+        {!editingId && (
+          <>
+            <label className="mt-2">Contraseña</label>
+            <input
+              type="password"
+              className="form-control"
+              value={form.contrasena}
+              onChange={e => setForm({ ...form, contrasena: e.target.value })}
+            />
+          </>
+        )}
+
+        <label className="mt-2">Licencia</label>
+        <input
+          className="form-control"
+          value={form.licencia}
+          onChange={e => setForm({ ...form, licencia: e.target.value })}
+        />
+
+        <div className="mt-3 d-flex justify-content-end gap-2">
+          <button className="btn btn-secondary" onClick={() => setModal(false)}>
+            Cancelar
+          </button>
+          <button className="btn btn-success" onClick={guardar}>
+            Guardar
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }
