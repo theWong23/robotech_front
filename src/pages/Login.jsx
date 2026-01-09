@@ -1,11 +1,12 @@
 import { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
 import AuthContext from "../context/AuthContext";
 
 export default function Login() {
-
-  const { login } = useContext(AuthContext); // <-- IMPORTANTE, PAPU
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
@@ -21,74 +22,61 @@ export default function Login() {
     });
 
     try {
-      const response = await axios.post(
+      const { data } = await axios.post(
         "http://localhost:8080/api/auth/login",
         { correo, contrasena }
       );
 
       Swal.close();
-      
-// ⚠️ Doble validación en el cliente (por seguridad y UX)
-      const { usuario, rol } = response.data;
 
+      const { token, rol, entidad } = data;
+
+      console.log("ROL:", rol);
+      console.log("ENTIDAD:", entidad);
+
+      // ⛔ Bloquear administradores
       if (rol === "ADMINISTRADOR" || rol === "SUBADMINISTRADOR") {
         await Swal.fire({
           icon: "warning",
           title: "Acceso no permitido",
           text: "Este login es solo para Club, Competidor y Juez",
-          confirmButtonColor: "#3085d6",
         });
-        // No guardar sesión ni redirigir
         return;
       }
 
+      // ✅ Guardar sesión
+      login({
+        token,
+        rol,
+        usuario: entidad,
+      });
 
-      // ⚡ IMPORTANTE: actualizar contexto global
-      login(response.data);
-      
-      
       await Swal.fire({
         icon: "success",
         title: "Bienvenido",
-        text: `Hola ${usuario?.correo ?? "usuario"}, tu rol es: ${rol}`,
-        confirmButtonColor: "#3085d6",
+        text: `Rol detectado correctamente: ${rol}`,
       });
 
-      const rutas = {
+      const rutasPorRol = {
         CLUB: "/club",
         COMPETIDOR: "/competidor",
         JUEZ: "/juez",
       };
 
-      window.location.href = rutas[rol] || "/";
+      navigate(rutasPorRol[rol] || "/");
 
-    } catch (err) {
+    } catch (error) {
       Swal.close();
 
-      // Si el backend bloqueó admin/subadmin, vendrá 403 con el texto
-      const status = err?.response?.status;
-      const serverMessage = err?.response?.data;
+      const mensaje =
+        typeof error?.response?.data === "string"
+          ? error.response.data
+          : "Correo o contraseña incorrectos";
 
-      if (status === 403) {
-        Swal.fire({
-          icon: "warning",
-          title: "Acceso no permitido",
-          text: typeof serverMessage === "string"
-            ? serverMessage
-            : "Este login es solo para Club, Competidor y Juez",
-          confirmButtonColor: "#3085d6",
-        });
-        return;
-      }
-
-      // Otros errores (401, 400, 500, conexión, etc.)
       Swal.fire({
         icon: "error",
         title: "Error al iniciar sesión",
-        text:
-          typeof serverMessage === "string"
-            ? serverMessage
-            : "Correo o contraseña incorrectos",
+        text: mensaje,
       });
     }
   };
@@ -96,7 +84,10 @@ export default function Login() {
   return (
     <>
       {/* NAVBAR */}
-      <nav className="navbar navbar-expand-lg" style={{ backgroundColor: "#00b3b3" }}>
+      <nav
+        className="navbar navbar-expand-lg"
+        style={{ backgroundColor: "#00b3b3" }}
+      >
         <div className="container">
           <a className="navbar-brand" href="/">
             <img src="/img/logo.jpg" alt="Logo" height="50" />
@@ -106,9 +97,8 @@ export default function Login() {
 
       {/* LOGIN */}
       <div className="container my-5">
-        <div className="row justify-content-center">
-
-          <div className="col-md-4 d-flex justify-content-center align-items-center">
+        <div className="row justify-content-center align-items-center">
+          <div className="col-md-4 d-flex justify-content-center">
             <img
               src="/img/logo.jpg"
               alt="Logo Robotech"
@@ -118,10 +108,11 @@ export default function Login() {
           </div>
 
           <div className="col-md-5">
-            <h3 className="fw-bold text-primary mb-4">Iniciar sesión</h3>
+            <h3 className="fw-bold text-primary mb-4">
+              Iniciar sesión
+            </h3>
 
             <form onSubmit={handleSubmit}>
-              
               <div className="mb-3">
                 <input
                   type="email"
@@ -144,18 +135,24 @@ export default function Login() {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary w-100 mb-3">
+              <button
+                type="submit"
+                className="btn btn-primary w-100 mb-3"
+              >
                 Ingresar
               </button>
 
               <div className="text-center">
-                <a href="#" className="small text-muted d-block mb-2">¿Olvidaste tu contraseña?</a>
+                <a href="#" className="small text-muted d-block mb-2">
+                  ¿Olvidaste tu contraseña?
+                </a>
                 <p className="small mb-0">
                   ¿No tienes cuenta?{" "}
-                  <a href="#" className="text-primary fw-bold">Regístrate</a>
+                  <a href="#" className="text-primary fw-bold">
+                    Regístrate
+                  </a>
                 </p>
               </div>
-
             </form>
           </div>
         </div>

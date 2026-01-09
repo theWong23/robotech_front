@@ -190,14 +190,16 @@ export default function Register() {
 
     try {
       const payload = {
-        nombre: form.nombres,
-        apellido: form.apellidos,
+        nombre: form.nombres.trim(),
+        apellido: form.apellidos.trim(),
         dni: form.dni,
         correo: form.correo,
         telefono: form.telefono,
         contrasena: form.contrasena,
         codigoClub: codigo      // 👈 el club viene del código
       };
+      console.log("PAYLOAD REGISTRO:", payload);
+
 
       await axios.post("http://localhost:8080/api/auth/registro/competidor", payload);
 

@@ -25,20 +25,16 @@ export default function CompetidorDashboard() {
   });
 
   // =============================
-  // AUTH
+  // AUTH (LECTURA SEGURA)
   // =============================
-  const entidad = JSON.parse(localStorage.getItem("entidad"));
+  const storedUser = localStorage.getItem("usuario");
+  const entidad = storedUser ? JSON.parse(storedUser) : null;
   const token = localStorage.getItem("token");
   const idCompetidor = entidad?.idCompetidor;
 
   if (!entidad || !idCompetidor || !token) {
-    return <p>No autorizado</p>;
+    return <p>No autorizado. Inicia sesión nuevamente.</p>;
   }
-
-  const hayErrores =
-  errores.nombres ||
-  errores.apellidos ||
-  errores.telefono;
 
   // =============================
   // CARGAR PERFIL
@@ -67,6 +63,7 @@ export default function CompetidorDashboard() {
 
     } catch (err) {
       console.error(err);
+      Swal.fire("Error", "No se pudo cargar el perfil", "error");
     }
   };
 
@@ -126,7 +123,6 @@ export default function CompetidorDashboard() {
       ? "form-control is-invalid"
       : "form-control is-valid";
   };
-
 
   // =============================
   // GUARDAR CAMBIOS
@@ -207,12 +203,12 @@ export default function CompetidorDashboard() {
   if (!competidor) return <p>Cargando perfil...</p>;
 
   const formularioValido =
-  !errores.nombres &&
-  !errores.apellidos &&
-  !errores.telefono &&
-  form.nombres &&
-  form.apellidos &&
-  form.telefono;
+    !errores.nombres &&
+    !errores.apellidos &&
+    !errores.telefono &&
+    form.nombres &&
+    form.apellidos &&
+    form.telefono;
 
   // =============================
   // RENDER
@@ -285,9 +281,9 @@ export default function CompetidorDashboard() {
           <span>{competidor.correo}</span>
         </div>
 
+        {/* NOMBRES */}
         <div className="perfil-dato">
           <label>Nombres</label>
-
           {editando ? (
             <>
               <input
@@ -297,9 +293,7 @@ export default function CompetidorDashboard() {
                 onChange={cambiar}
               />
               {errores.nombres && (
-                <small className="text-danger fade-edit">
-                  {errores.nombres}
-                </small>
+                <small className="text-danger">{errores.nombres}</small>
               )}
             </>
           ) : (
@@ -307,10 +301,9 @@ export default function CompetidorDashboard() {
           )}
         </div>
 
-
+        {/* APELLIDOS */}
         <div className="perfil-dato">
           <label>Apellidos</label>
-
           {editando ? (
             <>
               <input
@@ -320,9 +313,7 @@ export default function CompetidorDashboard() {
                 onChange={cambiar}
               />
               {errores.apellidos && (
-                <small className="text-danger fade-edit">
-                  {errores.apellidos}
-                </small>
+                <small className="text-danger">{errores.apellidos}</small>
               )}
             </>
           ) : (
@@ -330,10 +321,9 @@ export default function CompetidorDashboard() {
           )}
         </div>
 
-
+        {/* TELEFONO */}
         <div className="perfil-dato">
           <label>Teléfono</label>
-
           {editando ? (
             <>
               <input
@@ -351,7 +341,6 @@ export default function CompetidorDashboard() {
           )}
         </div>
 
-
         {editando && (
           <button
             className="btn btn-success mt-3"
@@ -360,7 +349,6 @@ export default function CompetidorDashboard() {
           >
             Guardar cambios
           </button>
-
         )}
       </div>
     </div>

@@ -7,7 +7,9 @@ export default function ClubDashboard() {
   const [club, setClub] = useState(null);
   const [codigos, setCodigos] = useState([]);
 
-  const entidad = JSON.parse(localStorage.getItem("entidad"));
+  // 🔐 LEER USUARIO DE FORMA SEGURA
+  const storedUser = localStorage.getItem("usuario");
+  const entidad = storedUser ? JSON.parse(storedUser) : null;
   const idClub = entidad?.idClub;
 
   // ============================
@@ -98,8 +100,18 @@ export default function ClubDashboard() {
     }
   };
 
-  if (!club) return <div>Cargando información del club...</div>;
+  // 🛑 BLOQUEO DE SEGURIDAD
+  if (!entidad) {
+    return <div>No hay sesión activa. Inicia sesión nuevamente.</div>;
+  }
 
+  if (!club) {
+    return <div>Cargando información del club...</div>;
+  }
+
+  // ============================
+  //     RENDER
+  // ============================
   return (
     <>
       {/* PERFIL DEL CLUB */}
@@ -174,4 +186,3 @@ export default function ClubDashboard() {
     </>
   );
 }
-

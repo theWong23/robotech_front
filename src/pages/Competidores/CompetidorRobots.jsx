@@ -15,57 +15,86 @@ export default function CompetidorRobots() {
     categoria: "",
   });
 
-  // Obtener competidor logueado
-  const usuario = JSON.parse(localStorage.getItem("usuario"));
-  const entidad = JSON.parse(localStorage.getItem("entidad"));
-  const idCompetidor = entidad?.idCompetidor;
+  // =============================
+  // AUTH (LECTURA SEGURA)
+  // =============================
+  const storedUser = localStorage.getItem("usuario");
+  const usuario = storedUser ? JSON.parse(storedUser) : null;
+  const token = localStorage.getItem("token");
+  const idCompetidor = usuario?.idCompetidor;
 
-    const cargarRobots = async () => {
+  if (!usuario || !token || !idCompetidor) {
+    return <p>No autorizado</p>;
+  }
+
+  // =============================
+  // CARGAR ROBOTS
+  // =============================
+  const cargarRobots = async () => {
     try {
       const res = await api.get(
-        `http://localhost:8080/api/competidor/robots/${idCompetidor}`
+        `http://localhost:8080/api/competidor/robots/${idCompetidor}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       setRobots(res.data);
     } catch (error) {
       console.error(error);
+      Swal.fire("Error", "No se pudieron cargar los robots", "error");
     }
   };
 
   useEffect(() => {
-  if (idCompetidor) {
     cargarRobots();
-  }
-}, [idCompetidor]);
-  
+  }, [idCompetidor]);
 
+  // =============================
+  // MODAL
+  // =============================
   const abrirCrear = () => {
     setForm({ nombre: "", nickname: "", categoria: "" });
     setEditingId(null);
     setModal(true);
   };
 
+  // =============================
+  // GUARDAR
+  // =============================
   const guardar = async () => {
 
     if (!nicknameEsValido(form.nickname)) {
-    Swal.fire(
-      "Error",
-      "El nickname contiene palabras inapropiadas.",
-      "error"
-    );
-    return; // Detener envío
-  }
+      Swal.fire(
+        "Error",
+        "El nickname contiene palabras inapropiadas.",
+        "error"
+      );
+      return;
+    }
 
     try {
       if (editingId) {
         await api.put(
           `http://localhost:8080/api/competidor/robots/${editingId}`,
-          form
+          form,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         Swal.fire("Robot actualizado", "", "success");
       } else {
         await api.post(
           `http://localhost:8080/api/competidor/robots/${idCompetidor}`,
-          form
+          form,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         Swal.fire("Robot creado", "", "success");
       }
@@ -79,6 +108,9 @@ export default function CompetidorRobots() {
     }
   };
 
+  // =============================
+  // ELIMINAR
+  // =============================
   const eliminar = async (id) => {
     const confirm = await Swal.fire({
       title: "¿Eliminar robot?",
@@ -90,14 +122,24 @@ export default function CompetidorRobots() {
     if (!confirm.isConfirmed) return;
 
     try {
-      await api.delete(`http://localhost:8080/api/competidor/robots/${id}`);
+      await api.delete(
+        `http://localhost:8080/api/competidor/robots/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       Swal.fire("Eliminado", "", "success");
       cargarRobots();
-    } catch (err) {
+    } catch {
       Swal.fire("Error", "No se pudo eliminar el robot", "error");
     }
   };
 
+  // =============================
+  // RENDER
+  // =============================
   return (
     <div className="container mt-4">
 
@@ -154,7 +196,6 @@ export default function CompetidorRobots() {
                     Eliminar
                   </button>
                 </td>
-
               </tr>
             ))
           )}
@@ -200,8 +241,19 @@ export default function CompetidorRobots() {
               </select>
 
               <div className="mt-3 d-flex justify-content-end gap-2">
-                <button className="btn btn-secondary" onClick={() => setModal(false)}>Cancelar</button>
-                <button className="btn btn-primary" onClick={guardar}>Guardar</button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={guardar}
+                  disabled={!form.nombre || !form.nickname || !form.categoria}
+                >
+                  Guardar
+                </button>
               </div>
 
             </div>

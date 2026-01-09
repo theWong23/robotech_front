@@ -1,16 +1,19 @@
-import axios from "axios";
+import api from "./axiosConfig";
 
-const API_URL = "http://localhost:8080/api/usuarios";
+export const login = async (correo, contrasena) => {
+  const res = await api.post("/api/auth/login", {
+    correo,
+    contrasena
+  });
 
-export async function login(correo, contrasena) {
-  try {
-    const res = await axios.post(`${API_URL}/login`, {
-      correo,
-      contrasena,
-    });
+  const { token, usuario } = res.data;
 
-    return res.data; // usuario del backend
-  } catch (error) {
-    throw error.response?.data || "Error al iniciar sesión";
-  }
-}
+  localStorage.setItem("token", token);
+  localStorage.setItem("usuario", JSON.stringify(usuario));
+
+  return usuario;
+};
+
+export const logout = () => {
+  localStorage.clear();
+};

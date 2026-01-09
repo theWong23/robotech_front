@@ -9,6 +9,8 @@ export default function Clubes() {
   const [editando, setEditando] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const [modalOpen, setModalOpen] = useState(false);
+
   const [form, setForm] = useState({
     nombre: "",
     correoContacto: "",
@@ -19,11 +21,9 @@ export default function Clubes() {
     contrasenaPropietario: ""
   });
 
-  const [modalOpen, setModalOpen] = useState(false);
-
-  // =========================
+  // =====================================
   // CARGAR CLUBES
-  // =========================
+  // =====================================
   useEffect(() => {
     cargarClubes();
   }, [busqueda]);
@@ -35,16 +35,16 @@ export default function Clubes() {
         params: { nombre: busqueda }
       });
       setClubes(res.data);
-    } catch (err) {
+    } catch {
       Swal.fire("Error", "No se pudo cargar los clubes", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // =========================
-  // ABRIR MODAL CREAR
-  // =========================
+  // =====================================
+  // MODAL CREAR
+  // =====================================
   const abrirModal = () => {
     setForm({
       nombre: "",
@@ -58,65 +58,65 @@ export default function Clubes() {
     setModalOpen(true);
   };
 
-  // =========================
-  // CREAR CLUB
-  // =========================
   const crearClub = async () => {
     try {
       await api.post("/api/admin/clubes", form);
-
       Swal.fire("✔ Club creado", "El club fue registrado correctamente", "success");
       setModalOpen(false);
       cargarClubes();
-
     } catch (err) {
-      Swal.fire("Error", "No se pudo crear el club", "error");
+      Swal.fire("Error", err.response?.data || "No se pudo crear el club", "error");
     }
   };
 
-  // =========================
-  // GUARDAR EDICIÓN
-  // =========================
+  // =====================================
+  // EDITAR CLUB
+  // =====================================
   const guardarClub = async () => {
     try {
       await api.put(`/api/admin/clubes/${editando.idClub}`, editando);
-
       Swal.fire("✔ Club actualizado", "", "success");
       setEditando(null);
       cargarClubes();
-
-    } catch (err) {
+    } catch {
       Swal.fire("Error", "No se pudo actualizar", "error");
     }
   };
 
-  // =========================
-  // ELIMINAR CLUB
-  // =========================
-  const eliminarClub = async (id) => {
+  // =====================================
+  // ACTIVAR / DESACTIVAR
+  // =====================================
+  const cambiarEstado = async (club) => {
+
+    const nuevoEstado = club.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO";
+
     const confirm = await Swal.fire({
-      title: "¿Eliminar club?",
-      text: "Esta acción no se puede deshacer",
+      title: `${nuevoEstado === "ACTIVO" ? "Activar" : "Desactivar"} club`,
+      text: `¿Seguro que deseas ${nuevoEstado.toLowerCase()} este club?`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "red",
-      confirmButtonText: "Eliminar",
+      confirmButtonText: "Sí",
+      cancelButtonText: "Cancelar"
     });
 
     if (!confirm.isConfirmed) return;
 
     try {
-      await api.delete(`/api/admin/clubes/${id}`);
-      Swal.fire("Eliminado", "El club ha sido eliminado", "success");
+      await api.put(`/api/admin/clubes/${club.idClub}`, {
+        ...club,
+        estado: nuevoEstado
+      });
+
+      Swal.fire("✔ Estado actualizado", "", "success");
       cargarClubes();
-    } catch (err) {
-      Swal.fire("Error", "No se pudo eliminar", "error");
+    } catch {
+      Swal.fire("Error", "No se pudo cambiar el estado", "error");
     }
   };
 
-  // =========================
+  // =====================================
   // RENDER
-  // =========================
+  // =====================================
   return (
     <div className="p-4">
 
@@ -130,33 +130,37 @@ export default function Clubes() {
         onChange={(e) => setBusqueda(e.target.value)}
       />
 
-      <button className="btn btn-primary mb-4" onClick={abrirModal}>
+      <button
+        className="btn btn-primary mb-4"
+        onClick={abrirModal}
+        disabled={loading}
+      >
         ➕ Crear Nuevo Club
       </button>
 
-      <table className="table table-bordered">
+      <table className="table table-bordered align-middle">
         <thead className="table-dark">
           <tr>
             <th>Nombre</th>
             <th>Correo</th>
             <th>Teléfono</th>
             <th>Estado</th>
-            <th>Acciones</th>
+            <th style={{ width: 220 }}>Acciones</th>
           </tr>
         </thead>
 
         <tbody>
           {loading ? (
-            <tr><td colSpan="5">Cargando...</td></tr>
+            <tr><td colSpan="5" className="text-center">Cargando...</td></tr>
           ) : clubes.length === 0 ? (
-            <tr><td colSpan="5">No se encontraron clubes</td></tr>
+            <tr><td colSpan="5" className="text-center">No se encontraron clubes</td></tr>
           ) : clubes.map(c => (
             <tr key={c.idClub}>
               <td>{c.nombre}</td>
               <td>{c.correoContacto}</td>
               <td>{c.telefonoContacto}</td>
               <td>
-                <span className={`badge bg-${c.estado === "ACTIVO" ? "success" : "secondary"}`}>
+                <span className={`badge rounded-pill bg-${c.estado === "ACTIVO" ? "success" : "danger"}`}>
                   {c.estado}
                 </span>
               </td>
@@ -169,10 +173,10 @@ export default function Clubes() {
                 </button>
 
                 <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => eliminarClub(c.idClub)}
+                  className={`btn btn-${c.estado === "ACTIVO" ? "danger" : "success"} btn-sm`}
+                  onClick={() => cambiarEstado(c)}
                 >
-                  Eliminar
+                  {c.estado === "ACTIVO" ? "Desactivar" : "Activar"}
                 </button>
               </td>
             </tr>
@@ -180,28 +184,63 @@ export default function Clubes() {
         </tbody>
       </table>
 
-      {/* MODAL CREAR */}
+      {/* ================= MODAL CREAR ================= */}
       {modalOpen && (
-        <div className="modal fade show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
+        <div className="modal fade show d-block" style={{ background: "#0008" }}>
           <div className="modal-dialog">
-            <div className="modal-content p-3">
+            <div className="modal-content p-4">
 
-              <h4 className="fw-bold">Registrar Nuevo Club</h4>
+              <h4 className="fw-bold mb-3">Registrar Club</h4>
 
-              {Object.keys(form).map((k) => (
-                <input
-                  key={k}
-                  type={k.includes("contrasena") ? "password" : "text"}
-                  className="form-control mt-2"
-                  placeholder={k}
-                  value={form[k]}
-                  onChange={e => setForm({ ...form, [k]: e.target.value })}
-                />
-              ))}
+              <input className="form-control mb-2" placeholder="Nombre del club"
+                value={form.nombre}
+                onChange={e => setForm({ ...form, nombre: e.target.value })}
+              />
 
-              <div className="mt-3 d-flex justify-content-end gap-2">
-                <button className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cerrar</button>
-                <button className="btn btn-success" onClick={crearClub}>Guardar</button>
+              <input className="form-control mb-2" placeholder="Correo de contacto"
+                value={form.correoContacto}
+                onChange={e => setForm({ ...form, correoContacto: e.target.value })}
+              />
+
+              <input className="form-control mb-2" placeholder="Teléfono de contacto"
+                value={form.telefonoContacto}
+                onChange={e => setForm({ ...form, telefonoContacto: e.target.value })}
+              />
+
+              <input
+                className="form-control mb-2"
+                placeholder="Dirección fiscal"
+                value={form.direccionFiscal}
+                onChange={e =>
+                  setForm({ ...form, direccionFiscal: e.target.value })
+                }
+              />
+
+
+              <hr />
+
+              <input className="form-control mb-2" placeholder="Correo del propietario"
+                value={form.correoPropietario}
+                onChange={e => setForm({ ...form, correoPropietario: e.target.value })}
+              />
+
+              <input className="form-control mb-2" placeholder="Teléfono del propietario"
+                value={form.telefonoPropietario}
+                onChange={e => setForm({ ...form, telefonoPropietario: e.target.value })}
+              />
+
+              <input className="form-control mb-3" type="password" placeholder="Contraseña"
+                value={form.contrasenaPropietario}
+                onChange={e => setForm({ ...form, contrasenaPropietario: e.target.value })}
+              />
+
+              <div className="text-end">
+                <button className="btn btn-secondary me-2" onClick={() => setModalOpen(false)}>
+                  Cancelar
+                </button>
+                <button className="btn btn-success" onClick={crearClub}>
+                  Guardar
+                </button>
               </div>
 
             </div>
@@ -209,48 +248,45 @@ export default function Clubes() {
         </div>
       )}
 
-      {/* MODAL EDITAR */}
+      {/* ================= MODAL EDITAR ================= */}
       {editando && (
-        <div className="modal d-block" style={{ background: "#0008" }}>
+        <div className="modal fade show d-block" style={{ background: "#0008" }}>
           <div className="modal-dialog">
-            <div className="modal-content">
+            <div className="modal-content p-4">
 
-              <div className="modal-header">
-                <h5 className="modal-title">Editar Club</h5>
-                <button className="btn-close" onClick={() => setEditando(null)} />
-              </div>
+              <h4 className="fw-bold mb-3">Editar Club</h4>
 
-              <div className="modal-body">
+              <input className="form-control mb-2"
+                value={editando.nombre}
+                onChange={e => setEditando({ ...editando, nombre: e.target.value })}
+              />
 
-                <input className="form-control mb-2"
-                  value={editando.nombre}
-                  onChange={(e) => setEditando({ ...editando, nombre: e.target.value })}
-                />
+              <input className="form-control mb-2"
+                value={editando.correoContacto}
+                onChange={e => setEditando({ ...editando, correoContacto: e.target.value })}
+              />
 
-                <input className="form-control mb-2"
-                  value={editando.correoContacto}
-                  onChange={(e) => setEditando({ ...editando, correoContacto: e.target.value })}
-                />
+              <input className="form-control mb-2"
+                value={editando.telefonoContacto}
+                onChange={e => setEditando({ ...editando, telefonoContacto: e.target.value })}
+              />
 
-                <input className="form-control mb-2"
-                  value={editando.telefonoContacto}
-                  onChange={(e) => setEditando({ ...editando, telefonoContacto: e.target.value })}
-                />
+              <select
+                className="form-select mb-3"
+                value={editando.estado}
+                onChange={e => setEditando({ ...editando, estado: e.target.value })}
+              >
+                <option value="ACTIVO">ACTIVO</option>
+                <option value="INACTIVO">INACTIVO</option>
+              </select>
 
-                <select
-                  className="form-select"
-                  value={editando.estado}
-                  onChange={(e) => setEditando({ ...editando, estado: e.target.value })}
-                >
-                  <option value="ACTIVO">ACTIVO</option>
-                  <option value="INACTIVO">INACTIVO</option>
-                </select>
-
-              </div>
-
-              <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => setEditando(null)}>Cancelar</button>
-                <button className="btn btn-primary" onClick={guardarClub}>Guardar</button>
+              <div className="text-end">
+                <button className="btn btn-secondary me-2" onClick={() => setEditando(null)}>
+                  Cancelar
+                </button>
+                <button className="btn btn-primary" onClick={guardarClub}>
+                  Guardar
+                </button>
               </div>
 
             </div>

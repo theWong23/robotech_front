@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../services/api"; // ajusta la ruta si es necesario
 
 export default function ClubCategoriasTorneo() {
   const { idTorneo } = useParams();
@@ -8,7 +8,7 @@ export default function ClubCategoriasTorneo() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios
+    api
       .get(`http://localhost:8080/api/admin/torneos/${idTorneo}/categorias`)
       .then((res) => setCategorias(res.data))
       .catch(() => alert("Error cargando categorías"));
