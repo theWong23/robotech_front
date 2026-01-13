@@ -122,40 +122,61 @@ export default function AdminJueces() {
   // APROBAR / RECHAZAR
   // =========================
   const aprobar = async (idJuez) => {
-    const confirm = await Swal.fire({
-      title: "¿Aprobar juez?",
-      icon: "question",
-      showCancelButton: true
-    });
+  const confirm = await Swal.fire({
+    title: "¿Aprobar juez?",
+    icon: "question",
+    showCancelButton: true
+  });
 
-    if (!confirm.isConfirmed) return;
+  if (!confirm.isConfirmed) return;
 
-    try {
-      await api.put(`/api/admin/jueces/${idJuez}/aprobar`);
-      Swal.fire("✔ Juez aprobado", "", "success");
-      cargar();
-    } catch (err) {
-      Swal.fire("Error", "No se pudo aprobar al juez", "error");
-    }
-  };
+  try {
+    await api.put(
+      `/api/admin/jueces/${idJuez}/aprobar`,
+      {},
+      {
+        headers: {
+          "admin-id": adminId
+        }
+      }
+    );
+
+    Swal.fire("✔ Juez aprobado", "", "success");
+    cargar();
+  } catch (err) {
+    console.error(err);
+    Swal.fire("Error", "No se pudo aprobar al juez", "error");
+  }
+};
+
 
   const rechazar = async (idJuez) => {
-    const confirm = await Swal.fire({
-      title: "¿Rechazar juez?",
-      icon: "warning",
-      showCancelButton: true
-    });
+  const confirm = await Swal.fire({
+    title: "¿Rechazar juez?",
+    icon: "warning",
+    showCancelButton: true
+  });
 
-    if (!confirm.isConfirmed) return;
+  if (!confirm.isConfirmed) return;
 
-    try {
-      await api.put(`/api/admin/jueces/${idJuez}/rechazar`);
-      Swal.fire("✔ Juez rechazado", "", "success");
-      cargar();
-    } catch (err) {
-      Swal.fire("Error", "No se pudo rechazar al juez", "error");
-    }
-  };
+  try {
+    await api.put(
+      `/api/admin/jueces/${idJuez}/rechazar`,
+      {},
+      {
+        headers: {
+          "admin-id": adminId
+        }
+      }
+    );
+
+    Swal.fire("✔ Juez rechazado", "", "success");
+    cargar();
+  } catch (err) {
+    console.error(err);
+    Swal.fire("Error", "No se pudo rechazar al juez", "error");
+  }
+};
 
   // =========================
   // FECHA

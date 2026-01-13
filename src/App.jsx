@@ -17,6 +17,7 @@ import Rankings from "./pages/Rankings";
 import AdminPanel from "./pages/admin/AdminPanel";
 import AdminUsuarios from "./pages/admin/AdminUsuarios";
 import AdminClubes from "./pages/admin/AdminClubes";
+import AdminColiseos from "./pages/admin/AdminColiseos";
 import AdminJueces from "./pages/admin/AdminJueces";
 import AdminTorneos from "./pages/admin/AdminTorneos";
 import AdminCategoriasTorneo from "./pages/admin/AdminCategoriasTorneo";
@@ -24,6 +25,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminEncuentros from "./pages/admin/AdminEncuentros";
 import AdminGenerarEncuentros from "./pages/admin/AdminGenerarEncuentros";
 import AdminRobots from "./pages/admin/AdminRobots";
+import AdminInscripcion from "./pages/admin/AdminInscripcion";
 
 // ===== SUBADMIN =====
 import SubAdminPanel from "./pages/subadmin/SubAdminPanel";
@@ -73,10 +75,15 @@ function App() {
           <Route path="usuarios" element={<AdminUsuarios />} />
           <Route path="clubes" element={<AdminClubes />} />
           <Route path="jueces" element={<AdminJueces />} />
+          <Route path="coliseos" element={<AdminColiseos />} />
           <Route path="torneos" element={<AdminTorneos />} />
           <Route path="encuentros" element={<AdminEncuentros />} />
+           <Route path="inscripciones" element={<AdminInscripcion />} />
           <Route path="robots" element={<AdminRobots />} /> {/* 👈 */}
-          <Route path="encuentros/:idCategoria" element={<AdminGenerarEncuentros />} />
+          <Route
+            path="encuentros/:idCategoriaTorneo"
+            element={<AdminGenerarEncuentros />}
+          />
           <Route
             path="torneos/:idTorneo/categorias"
             element={<AdminCategoriasTorneo />}

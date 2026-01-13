@@ -14,33 +14,42 @@ export default function AdminGenerarEncuentros() {
   const [idJuez, setIdJuez] = useState("");
   const [idColiseo, setIdColiseo] = useState("");
 
-  // -----------------------------
-  // Cargar jueces y coliseos
-  // -----------------------------
+  // 🔒 VALIDACIÓN CLAVE
   useEffect(() => {
-    api.get("/api/admin/jueces")
-      .then(r => setJueces(r.data));
+    if (!idCategoriaTorneo) {
+      Swal.fire(
+        "Error",
+        "No se recibió la categoría del torneo",
+        "error"
+      );
+      navigate("/admin/encuentros");
+    }
+  }, [idCategoriaTorneo, navigate]);
 
-    api.get("/api/admin/coliseos")
-      .then(r => setColiseos(r.data));
+  // Cargar jueces y coliseos
+  useEffect(() => {
+    api.get("/api/admin/jueces/select").then(r => setJueces(r.data));
+    api.get("/api/admin/coliseos").then(r => setColiseos(r.data));
   }, []);
 
-  // -----------------------------
-  // Generar encuentros
-  // -----------------------------
   const generar = async () => {
+
     if (!tipoEncuentro || !idJuez || !idColiseo) {
       Swal.fire("Atención", "Completa todos los campos", "warning");
       return;
     }
 
+    const payload = {
+      idCategoriaTorneo,
+      tipoEncuentro,
+      idJuez,
+      idColiseo
+    };
+
+    console.log("📦 Payload enviado:", payload);
+
     try {
-      await api.post("/api/admin/encuentros/generar", {
-        idCategoriaTorneo,
-        tipoEncuentro,
-        idJuez,
-        idColiseo
-      });
+      await api.post("/api/admin/encuentros/generar", payload);
 
       Swal.fire(
         "Encuentros generados",
@@ -51,9 +60,10 @@ export default function AdminGenerarEncuentros() {
       navigate("/admin/encuentros");
 
     } catch (err) {
+      console.error(err);
       Swal.fire(
         "Error",
-        err?.response?.data ?? "No se pudieron generar los encuentros",
+        err?.response?.data?.message ?? "No se pudieron generar los encuentros",
         "error"
       );
     }
@@ -78,13 +88,15 @@ export default function AdminGenerarEncuentros() {
         value={idJuez}
         onChange={e => setIdJuez(e.target.value)}
       >
-        <option value="">Seleccionar Juez</option>
+        <option value="" disabled>Seleccionar Juez</option>
+
         {jueces.map(j => (
           <option key={j.idJuez} value={j.idJuez}>
-            {j.nombre}
+            {j.nombreCompleto}
           </option>
         ))}
       </select>
+
 
       <select
         className="form-select mb-3"
