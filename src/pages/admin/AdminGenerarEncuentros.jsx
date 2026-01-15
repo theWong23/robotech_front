@@ -11,10 +11,11 @@ export default function AdminGenerarEncuentros() {
   const [tipoEncuentro, setTipoEncuentro] = useState("");
   const [jueces, setJueces] = useState([]);
   const [coliseos, setColiseos] = useState([]);
+  
   const [idJuez, setIdJuez] = useState("");
   const [idColiseo, setIdColiseo] = useState("");
 
-  // 🔒 VALIDACIÓN CLAVE
+  // 🔒 VALIDACIÓN: Verificar que tenemos el ID de la categoría
   useEffect(() => {
     if (!idCategoriaTorneo) {
       Swal.fire(
@@ -26,15 +27,27 @@ export default function AdminGenerarEncuentros() {
     }
   }, [idCategoriaTorneo, navigate]);
 
-  // Cargar jueces y coliseos
+  // 📥 CARGA DE DATOS (Jueces y Coliseos)
   useEffect(() => {
-    api.get("/admin/jueces")
-      .then(r => setJueces(r.data));
+    const fetchData = async () => {
+      try {
+        const [resJueces, resColiseos] = await Promise.all([
+          api.get("/admin/jueces"),
+          api.get("/admin/coliseos")
+        ]);
+        
+        setJueces(resJueces.data);
+        setColiseos(resColiseos.data);
+      } catch (error) {
+        console.error("Error cargando datos:", error);
+        Swal.fire("Error", "No se pudieron cargar las listas", "error");
+      }
+    };
 
-    api.get("/admin/coliseos")
-      .then(r => setColiseos(r.data));
+    fetchData();
   }, []);
 
+  // 💾 GENERAR ENCUENTROS
   const generar = async () => {
 
     if (!tipoEncuentro || !idJuez || !idColiseo) {
@@ -52,12 +65,7 @@ export default function AdminGenerarEncuentros() {
     console.log("📦 Payload enviado:", payload);
 
     try {
-      await api.post("/admin/encuentros/generar", {
-        idCategoriaTorneo,
-        tipoEncuentro,
-        idJuez,
-        idColiseo
-      });
+      // ✅ CORREGIDO: Una sola llamada a la API
       await api.post("/admin/encuentros/generar", payload);
 
       Swal.fire(
@@ -82,43 +90,56 @@ export default function AdminGenerarEncuentros() {
     <div className="card p-4 shadow-sm">
       <h4 className="fw-bold mb-3">Generar Encuentros</h4>
 
-      <select
-        className="form-select mb-3"
-        value={tipoEncuentro}
-        onChange={e => setTipoEncuentro(e.target.value)}
-      >
-        <option value="">Tipo de Encuentro</option>
-        <option value="ELIMINACION_DIRECTA">Eliminación Directa</option>
-        <option value="TODOS_CONTRA_TODOS">Todos contra Todos</option>
-      </select>
+      {/* TIPO DE ENCUENTRO */}
+      <div className="mb-3">
+        <label className="form-label">Modalidad de Juego</label>
+        <select
+          className="form-select"
+          value={tipoEncuentro}
+          onChange={e => setTipoEncuentro(e.target.value)}
+        >
+          <option value="">Seleccione...</option>
+          <option value="ELIMINACION_DIRECTA">Eliminación Directa</option>
+          <option value="TODOS_CONTRA_TODOS">Todos contra Todos</option>
+        </select>
+      </div>
 
-      <select
-        className="form-select mb-3"
-        value={idJuez}
-        onChange={e => setIdJuez(e.target.value)}
-      >
-        <option value="" disabled>Seleccionar Juez</option>
+      {/* SELECCIÓN DE JUEZ */}
+      <div className="mb-3">
+        <label className="form-label">Juez Principal</label>
+        <select
+          className="form-select"
+          value={idJuez}
+          onChange={e => setIdJuez(e.target.value)}
+        >
+          <option value="" disabled>Seleccionar Juez</option>
+          {jueces.map(j => (
+            <option key={j.idJuez} value={j.idJuez}>
+              {/* ✅ CORREGIDO: Validación de objeto usuario */}
+              {j.usuario 
+                ? `${j.usuario.nombres} ${j.usuario.apellidos}` 
+                : `Juez #${j.idJuez} (Nombre no disponible)`}
+            </option>
+          ))}
+        </select>
+      </div>
 
-        {jueces.map(j => (
-          <option key={j.idJuez} value={j.idJuez}>
-            {j.nombreCompleto}
-          </option>
-        ))}
-      </select>
-
-
-      <select
-        className="form-select mb-3"
-        value={idColiseo}
-        onChange={e => setIdColiseo(e.target.value)}
-      >
-        <option value="">Seleccionar Coliseo</option>
-        {coliseos.map(c => (
-          <option key={c.idColiseo} value={c.idColiseo}>
-            {c.nombre}
-          </option>
-        ))}
-      </select>
+      {/* SELECCIÓN DE COLISEO */}
+      <div className="mb-4">
+        <label className="form-label">Lugar del Encuentro</label>
+        <select
+          className="form-select"
+          value={idColiseo}
+          onChange={e => setIdColiseo(e.target.value)}
+        >
+          <option value="">Seleccionar Coliseo</option>
+          {coliseos.map(c => (
+            <option key={c.idColiseo} value={c.idColiseo}>
+              {c.nombre} {c.ubicacion ? `(${c.ubicacion})` : ""}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <button className="btn btn-success w-100" onClick={generar}>
         Generar Encuentros
