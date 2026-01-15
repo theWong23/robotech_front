@@ -1,7 +1,8 @@
 import api from "./axiosConfig";
 
+// ✅ CAMBIO: Quita el "/" al principio de la ruta
 export const obtenerInscripcionesClub = () =>
-  api.get("/api/inscripciones/club");
+  api.get("inscripciones/club"); 
 
 export const obtenerInscripcionesCompetidor = () =>
-  api.get("/api/inscripciones/competidor");
+  api.get("inscripciones/competidor");

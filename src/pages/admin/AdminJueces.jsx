@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
-import api from "../../services/api";
+import api from "../../services/axiosConfig"; // Asegúrate que la ruta a axiosConfig sea correcta
 
 export default function AdminJueces() {
 
@@ -15,8 +15,23 @@ export default function AdminJueces() {
   const [modal, setModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  const usuario = JSON.parse(localStorage.getItem("usuario"));
-  const adminId = usuario?.idUsuario;
+  // =========================
+  // 1. OBTENER ID DEL ADMIN (ROBUSTO)
+  // =========================
+  const getAdminId = () => {
+    try {
+      const usuarioStr = localStorage.getItem("usuario");
+      if (!usuarioStr) return null;
+      const usuario = JSON.parse(usuarioStr);
+      // Busca el ID en la raíz o dentro de 'entidad' por seguridad
+      return usuario.idUsuario || usuario.entidad?.idUsuario || usuario.id;
+    } catch (e) {
+      console.error("Error leyendo usuario del storage", e);
+      return null;
+    }
+  };
+
+  const adminId = getAdminId();
 
   // =========================
   // CARGAR LISTA
@@ -27,9 +42,10 @@ export default function AdminJueces() {
 
   const cargar = async () => {
     try {
-      const res = await api.get("/api/admin/jueces");
+      const res = await api.get("/admin/jueces");
       setJueces(res.data);
     } catch (err) {
+      console.error(err);
       Swal.fire("Error", "No se pudo cargar la lista de jueces", "error");
     }
   };
@@ -69,22 +85,27 @@ export default function AdminJueces() {
   };
 
   // =========================
-  // GUARDAR
+  // GUARDAR (CREAR / EDITAR)
   // =========================
   const guardar = async () => {
-
     if (!validarCampos()) return;
+
+    if (!adminId) {
+        Swal.fire("Error de Sesión", "No se identifica al administrador. Relogueate.", "error");
+        return;
+    }
 
     try {
       if (!editingId) {
-        await api.post("/api/admin/jueces", {
+        // CREAR
+        await api.post("/admin/jueces", {
           ...form,
-          creadoPor: adminId
+          creadoPor: adminId // Enviamos el ID en el body (según tu DTO)
         });
-
         Swal.fire("✔ Juez creado correctamente", "", "success");
       } else {
-        await api.put(`/api/admin/jueces/${editingId}`, form);
+        // EDITAR
+        await api.put(`/admin/jueces/${editingId}`, form);
         Swal.fire("✔ Datos actualizados", "", "success");
       }
 
@@ -92,6 +113,7 @@ export default function AdminJueces() {
       cargar();
 
     } catch (err) {
+      console.error(err);
       Swal.fire("Error", "No se pudo guardar la información", "error");
     }
   };
@@ -110,7 +132,7 @@ export default function AdminJueces() {
     if (!confirm.isConfirmed) return;
 
     try {
-      await api.delete(`/api/admin/jueces/${idJuez}`);
+      await api.delete(`/admin/jueces/${idJuez}`);
       Swal.fire("Juez eliminado", "", "success");
       cargar();
     } catch (err) {
@@ -119,9 +141,14 @@ export default function AdminJueces() {
   };
 
   // =========================
-  // APROBAR / RECHAZAR
+  // APROBAR (CORREGIDO CON HEADERS)
   // =========================
   const aprobar = async (idJuez) => {
+    if (!adminId) {
+        Swal.fire("Error", "No se encuentra tu ID de admin. Cierra sesión y entra de nuevo.", "error");
+        return;
+    }
+
     const confirm = await Swal.fire({
       title: "¿Aprobar juez?",
       icon: "question",
@@ -131,15 +158,25 @@ export default function AdminJueces() {
     if (!confirm.isConfirmed) return;
 
     try {
-      await api.put(`/api/admin/jueces/${idJuez}/aprobar`);
+      // ⚠️ AQUÍ ESTÁ LA MAGIA: Enviamos el header 'admin-id'
+      await api.put(`/admin/jueces/${idJuez}/aprobar`, {}, {
+        headers: { "admin-id": adminId }
+      });
+
       Swal.fire("✔ Juez aprobado", "", "success");
       cargar();
     } catch (err) {
-      Swal.fire("Error", "No se pudo aprobar al juez", "error");
+      console.error(err);
+      Swal.fire("Error", "No se pudo aprobar al juez. Revisa la consola.", "error");
     }
   };
 
+  // =========================
+  // RECHAZAR (CORREGIDO CON HEADERS)
+  // =========================
   const rechazar = async (idJuez) => {
+    if (!adminId) return;
+
     const confirm = await Swal.fire({
       title: "¿Rechazar juez?",
       icon: "warning",
@@ -149,21 +186,26 @@ export default function AdminJueces() {
     if (!confirm.isConfirmed) return;
 
     try {
-      await api.put(`/api/admin/jueces/${idJuez}/rechazar`);
+      // ⚠️ AQUÍ TAMBIÉN: Enviamos el header 'admin-id'
+      await api.put(`/admin/jueces/${idJuez}/rechazar`, {}, {
+        headers: { "admin-id": adminId }
+      });
+
       Swal.fire("✔ Juez rechazado", "", "success");
       cargar();
     } catch (err) {
+      console.error(err);
       Swal.fire("Error", "No se pudo rechazar al juez", "error");
     }
   };
 
   // =========================
-  // FECHA
+  // HELPER FECHA
   // =========================
   const formatFecha = (f) => f ? new Date(f).toLocaleString() : "—";
 
   // =========================
-  // RENDER
+  // RENDER UI
   // =========================
   return (
     <div className="container mt-4">
@@ -174,8 +216,8 @@ export default function AdminJueces() {
         ➕ Crear Juez
       </button>
 
-      <table className="table table-bordered">
-        <thead>
+      <table className="table table-bordered shadow-sm">
+        <thead className="table-dark">
           <tr>
             <th>Correo</th>
             <th>Teléfono</th>
@@ -192,7 +234,7 @@ export default function AdminJueces() {
         <tbody>
           {jueces.length === 0 ? (
             <tr>
-              <td colSpan="9" className="text-center text-muted">
+              <td colSpan="9" className="text-center text-muted py-4">
                 No hay jueces registrados
               </td>
             </tr>
@@ -205,7 +247,7 @@ export default function AdminJueces() {
               <td>
                 <span className={`badge ${
                   j.estadoValidacion === "APROBADO" ? "bg-success" :
-                  j.estadoValidacion === "RECHAZADO" ? "bg-danger" : "bg-warning"
+                  j.estadoValidacion === "RECHAZADO" ? "bg-danger" : "bg-warning text-dark"
                 }`}>
                   {j.estadoValidacion}
                 </span>
@@ -217,93 +259,107 @@ export default function AdminJueces() {
               <td>{formatFecha(j.validadoEn)}</td>
 
               <td>
-                {j.estadoValidacion === "PENDIENTE" && (
-                  <>
-                    <button className="btn btn-success btn-sm me-2" onClick={() => aprobar(j.idJuez)}>
-                      Aprobar
-                    </button>
-                    <button className="btn btn-danger btn-sm me-2" onClick={() => rechazar(j.idJuez)}>
-                      Rechazar
-                    </button>
-                  </>
-                )}
+                <div className="d-flex gap-2">
+                    {j.estadoValidacion === "PENDIENTE" && (
+                    <>
+                        <button className="btn btn-success btn-sm" title="Aprobar" onClick={() => aprobar(j.idJuez)}>
+                            <i className="bi bi-check-lg"></i> Aprobar
+                        </button>
+                        <button className="btn btn-danger btn-sm" title="Rechazar" onClick={() => rechazar(j.idJuez)}>
+                            <i className="bi bi-x-lg"></i> Rechazar
+                        </button>
+                    </>
+                    )}
 
-                <button className="btn btn-warning btn-sm me-2"
-                  onClick={() => {
-                    setEditingId(j.idJuez);
-                    setForm({
-                      correo: j.usuario?.correo || "",
-                      telefono: j.usuario?.telefono || "",
-                      contrasena: "",
-                      licencia: j.licencia
-                    });
-                    setModal(true);
-                  }}>
-                  Editar
-                </button>
+                    <button className="btn btn-warning btn-sm"
+                    onClick={() => {
+                        setEditingId(j.idJuez);
+                        setForm({
+                        correo: j.usuario?.correo || "",
+                        telefono: j.usuario?.telefono || "",
+                        contrasena: "",
+                        licencia: j.licencia
+                        });
+                        setModal(true);
+                    }}>
+                    ✏️
+                    </button>
 
-                <button className="btn btn-outline-danger btn-sm"
-                  onClick={() => eliminar(j.idJuez)}>
-                  Eliminar
-                </button>
+                    <button className="btn btn-outline-danger btn-sm"
+                    onClick={() => eliminar(j.idJuez)}>
+                    🗑️
+                    </button>
+                </div>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
       {modal && (
-  <div className="modal fade show d-block" style={{ background: "rgba(0,0,0,0.45)" }}>
-    <div className="modal-dialog">
-      <div className="modal-content p-3">
+        <div className="modal fade show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
+            <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content p-4 shadow">
 
-        <h4>{editingId ? "Editar Juez" : "Crear Juez"}</h4>
+                <h4 className="fw-bold mb-3">{editingId ? "Editar Juez" : "Crear Juez"}</h4>
 
-        <label className="mt-2">Correo</label>
-        <input
-          className="form-control"
-          value={form.correo}
-          onChange={e => setForm({ ...form, correo: e.target.value })}
-        />
+                <div className="mb-2">
+                    <label className="form-label">Correo Electrónico</label>
+                    <input
+                    className="form-control"
+                    value={form.correo}
+                    onChange={e => setForm({ ...form, correo: e.target.value })}
+                    placeholder="ejemplo@robotech.com"
+                    />
+                </div>
 
-        <label className="mt-2">Teléfono</label>
-        <input
-          className="form-control"
-          value={form.telefono}
-          onChange={e => setForm({ ...form, telefono: e.target.value })}
-        />
+                <div className="mb-2">
+                    <label className="form-label">Teléfono</label>
+                    <input
+                    className="form-control"
+                    value={form.telefono}
+                    onChange={e => setForm({ ...form, telefono: e.target.value })}
+                    placeholder="9 Digitos"
+                    maxLength={9}
+                    />
+                </div>
 
-        {!editingId && (
-          <>
-            <label className="mt-2">Contraseña</label>
-            <input
-              type="password"
-              className="form-control"
-              value={form.contrasena}
-              onChange={e => setForm({ ...form, contrasena: e.target.value })}
-            />
-          </>
-        )}
+                {!editingId && (
+                <div className="mb-2">
+                    <label className="form-label">Contraseña</label>
+                    <input
+                    type="password"
+                    className="form-control"
+                    value={form.contrasena}
+                    onChange={e => setForm({ ...form, contrasena: e.target.value })}
+                    placeholder="Mínimo 6 caracteres"
+                    />
+                </div>
+                )}
 
-        <label className="mt-2">Licencia</label>
-        <input
-          className="form-control"
-          value={form.licencia}
-          onChange={e => setForm({ ...form, licencia: e.target.value })}
-        />
+                <div className="mb-3">
+                    <label className="form-label">Licencia</label>
+                    <input
+                    className="form-control"
+                    value={form.licencia}
+                    onChange={e => setForm({ ...form, licencia: e.target.value })}
+                    placeholder="Licencia de Arbitraje"
+                    />
+                </div>
 
-        <div className="mt-3 d-flex justify-content-end gap-2">
-          <button className="btn btn-secondary" onClick={() => setModal(false)}>
-            Cancelar
-          </button>
-          <button className="btn btn-success" onClick={guardar}>
-            Guardar
-          </button>
+                <div className="d-flex justify-content-end gap-2 mt-4">
+                <button className="btn btn-secondary" onClick={() => setModal(false)}>
+                    Cancelar
+                </button>
+                <button className="btn btn-primary" onClick={guardar}>
+                    {editingId ? "Actualizar" : "Guardar"}
+                </button>
+                </div>
+
+            </div>
+            </div>
         </div>
-
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
     </div>
   );

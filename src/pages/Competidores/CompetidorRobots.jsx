@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
-import { nicknameEsValido } from "../../utils/nicknameValidator";
-import api from "../../services/axiosConfig";
+import api from "../../services/axiosConfig"; // Asegúrate de que esta ruta sea correcta
 
 export default function CompetidorRobots() {
 
@@ -20,30 +19,21 @@ export default function CompetidorRobots() {
   // =============================
   const storedUser = localStorage.getItem("usuario");
   const usuario = storedUser ? JSON.parse(storedUser) : null;
-  const token = localStorage.getItem("token");
-  const idCompetidor = usuario?.idCompetidor;
-
-  if (!usuario || !token || !idCompetidor) {
-    return <p>No autorizado</p>;
-  }
+  // Ajusta esto según cómo guardes el ID en tu login (idCompetidor o id dentro de usuario)
+  const idCompetidor = usuario?.idCompetidor || usuario?.id; 
 
   // =============================
   // CARGAR ROBOTS
   // =============================
   const cargarRobots = async () => {
+    if (!idCompetidor) return;
     try {
-      const res = await api.get(
-        `http://localhost:8080/api/competidor/robots/${idCompetidor}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      // Ajusta la URL si tu endpoint es diferente
+      const res = await api.get(`/competidor/robots/${idCompetidor}`);
       setRobots(res.data);
     } catch (error) {
       console.error(error);
-      Swal.fire("Error", "No se pudieron cargar los robots", "error");
+      // No mostramos alerta aquí para no molestar al cargar la página si falla algo menor
     }
   };
 
@@ -52,7 +42,7 @@ export default function CompetidorRobots() {
   }, [idCompetidor]);
 
   // =============================
-  // MODAL
+  // ABRIR MODAL
   // =============================
   const abrirCrear = () => {
     setForm({ nombre: "", nickname: "", categoria: "" });
@@ -60,51 +50,54 @@ export default function CompetidorRobots() {
     setModal(true);
   };
 
+  const abrirEditar = (robot) => {
+    setEditingId(robot.idRobot);
+    setForm({
+      nombre: robot.nombre,
+      nickname: robot.nickname,
+      categoria: robot.categoria,
+    });
+    setModal(true);
+  };
+
   // =============================
-  // GUARDAR
+  // GUARDAR (CONECTADO AL VALIDATOR DEL BACKEND)
   // =============================
   const guardar = async () => {
-
-    if (!nicknameEsValido(form.nickname)) {
-      Swal.fire(
-        "Error",
-        "El nickname contiene palabras inapropiadas.",
-        "error"
-      );
-      return;
-    }
-
     try {
+      // 1. Enviamos los datos "crudos" al backend.
+      // Si el nickname tiene groserías, el backend lanzará excepción (400 o 500).
+      
       if (editingId) {
-        await api.put(
-          `http://localhost:8080/api/competidor/robots/${editingId}`,
-          form,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        Swal.fire("Robot actualizado", "", "success");
+        // EDITAR
+        await api.put(`/competidor/robots/${editingId}`, form);
+        Swal.fire({ icon: "success", title: "Actualizado", text: "Robot actualizado correctamente", timer: 1500 });
       } else {
-        await api.post(
-          `http://localhost:8080/api/competidor/robots/${idCompetidor}`,
-          form,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        Swal.fire("Robot creado", "", "success");
+        // CREAR
+        await api.post(`/competidor/robots/${idCompetidor}`, form);
+        Swal.fire({ icon: "success", title: "Registrado", text: "Robot creado correctamente", timer: 1500 });
       }
 
       setModal(false);
-      cargarRobots();
+      cargarRobots(); // Recargar la lista
 
     } catch (err) {
-      console.error(err);
-      Swal.fire("Error", err.response?.data || "No se pudo guardar", "error");
+      console.error("Error al guardar:", err);
+
+      // 2. 🛡️ CAPTURA DEL ERROR DEL NICKNAME VALIDATOR
+      // Spring Boot suele devolver el mensaje en: err.response.data.message
+      // O a veces directamente en err.response.data (dependiendo de tu configuración de errores global)
+      
+      const mensajeBackend = 
+        err.response?.data?.message || // Estructura estándar Spring Boot
+        err.response?.data ||          // Si devuelves ResponseEntity.body("Texto")
+        "Ocurrió un error al guardar el robot.";
+
+      Swal.fire({
+        icon: "error",
+        title: "No se pudo guardar",
+        text: mensajeBackend // Aquí saldrá: "El texto contiene palabras inapropiadas"
+      });
     }
   };
 
@@ -117,22 +110,17 @@ export default function CompetidorRobots() {
       text: "Esta acción no se puede deshacer",
       icon: "warning",
       showCancelButton: true,
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Sí, eliminar"
     });
 
     if (!confirm.isConfirmed) return;
 
     try {
-      await api.delete(
-        `http://localhost:8080/api/competidor/robots/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await api.delete(`/competidor/robots/${id}`);
       Swal.fire("Eliminado", "", "success");
       cargarRobots();
-    } catch {
+    } catch (err) {
       Swal.fire("Error", "No se pudo eliminar el robot", "error");
     }
   };
@@ -140,122 +128,129 @@ export default function CompetidorRobots() {
   // =============================
   // RENDER
   // =============================
+  if (!idCompetidor) return <div className="alert alert-warning m-4">No se encontró información del competidor. Inicia sesión nuevamente.</div>;
+
   return (
     <div className="container mt-4">
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h2 className="fw-bold text-primary">Mis Robots 🤖</h2>
+        <button className="btn btn-success" onClick={abrirCrear}>
+          ➕ Nuevo Robot
+        </button>
+      </div>
 
-      <h2 className="fw-bold">Mis Robots</h2>
-
-      <button className="btn btn-success my-3" onClick={abrirCrear}>
-        ➕ Registrar Robot
-      </button>
-
-      <table className="table table-bordered">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Nickname</th>
-            <th>Categoría</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {robots.length === 0 ? (
-            <tr>
-              <td colSpan="4" className="text-center text-muted">
-                No tienes robots registrados
-              </td>
-            </tr>
-          ) : (
-            robots.map((r) => (
-              <tr key={r.idRobot}>
-                <td>{r.nombre}</td>
-                <td>{r.nickname}</td>
-                <td>{r.categoria}</td>
-
-                <td>
-                  <button
-                    className="btn btn-warning btn-sm me-2"
-                    onClick={() => {
-                      setEditingId(r.idRobot);
-                      setForm({
-                        nombre: r.nombre,
-                        nickname: r.nickname,
-                        categoria: r.categoria,
-                      });
-                      setModal(true);
-                    }}
-                  >
-                    Editar
-                  </button>
-
-                  <button
-                    className="btn btn-danger btn-sm"
-                    onClick={() => eliminar(r.idRobot)}
-                  >
-                    Eliminar
-                  </button>
-                </td>
+      <div className="card shadow-sm">
+        <div className="card-body p-0">
+          <table className="table table-hover mb-0">
+            <thead className="table-light">
+              <tr>
+                <th>Nombre</th>
+                <th>Nickname</th>
+                <th>Categoría</th>
+                <th className="text-center">Acciones</th>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {robots.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="text-center py-4 text-muted">
+                    No tienes robots registrados aún.
+                  </td>
+                </tr>
+              ) : (
+                robots.map((r) => (
+                  <tr key={r.idRobot}>
+                    <td className="align-middle fw-bold">{r.nombre}</td>
+                    <td className="align-middle">
+                        <span className="badge bg-light text-dark border">{r.nickname}</span>
+                    </td>
+                    <td className="align-middle">
+                        <span className="badge bg-info text-dark">{r.categoria}</span>
+                    </td>
+                    <td className="text-center">
+                      <button
+                        className="btn btn-outline-warning btn-sm me-2"
+                        onClick={() => abrirEditar(r)}
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() => eliminar(r.idRobot)}
+                      >
+                        🗑️
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* MODAL */}
       {modal && (
-        <div
-          className="modal fade show d-block"
-          style={{ background: "rgba(0,0,0,0.5)" }}
-        >
-          <div className="modal-dialog">
-            <div className="modal-content p-3">
+        <div className="modal fade show d-block" style={{ background: "rgba(0,0,0,0.5)" }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header bg-primary text-white">
+                <h5 className="modal-title">{editingId ? "Editar Robot" : "Registrar Nuevo Robot"}</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setModal(false)}></button>
+              </div>
+              
+              <div className="modal-body">
+                <div className="mb-3">
+                    <label className="form-label">Nombre del Robot</label>
+                    <input
+                        className="form-control"
+                        placeholder="Ej: Destructor 3000"
+                        value={form.nombre}
+                        onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                    />
+                </div>
 
-              <h4>{editingId ? "Editar Robot" : "Crear Robot"}</h4>
+                <div className="mb-3">
+                    <label className="form-label">Nickname (Alias)</label>
+                    <input
+                        className="form-control"
+                        placeholder="Ej: El Titan"
+                        value={form.nickname}
+                        onChange={(e) => setForm({ ...form, nickname: e.target.value })}
+                    />
+                    <div className="form-text text-muted">
+                        El sistema validará que no contenga lenguaje ofensivo.
+                    </div>
+                </div>
 
-              <input
-                className="form-control mt-2"
-                placeholder="Nombre del robot"
-                value={form.nombre}
-                onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-              />
+                <div className="mb-3">
+                    <label className="form-label">Categoría</label>
+                    <select
+                        className="form-control"
+                        value={form.categoria}
+                        onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+                    >
+                        <option value="">-- Seleccione --</option>
+                        <option value="MINISUMO">Minisumo</option>
+                        <option value="MICROSUMO">Microsumo</option>
+                        <option value="MEGASUMO">Megasumo</option>
+                        <option value="DRONE">Drone</option>
+                        <option value="FOLLOWER">Line Follower</option>
+                        <option value="SOCCER">Soccer</option>
+                    </select>
+                </div>
+              </div>
 
-              <input
-                className="form-control mt-2"
-                placeholder="Nickname"
-                value={form.nickname}
-                onChange={(e) => setForm({ ...form, nickname: e.target.value })}
-              />
-
-              <select
-                className="form-control mt-2"
-                value={form.categoria}
-                onChange={(e) => setForm({ ...form, categoria: e.target.value })}
-              >
-                <option value="">Seleccione categoría</option>
-                <option value="MINISUMO">MINISUMO</option>
-                <option value="MICROSUMO">MICROSUMO</option>
-                <option value="MEGASUMO">MEGASUMO</option>
-                <option value="DRONE">DRONE</option>
-                <option value="FOLLOWER">FOLLOWER</option>
-              </select>
-
-              <div className="mt-3 d-flex justify-content-end gap-2">
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setModal(false)}
-                >
-                  Cancelar
-                </button>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setModal(false)}>Cancelar</button>
                 <button
                   className="btn btn-primary"
                   onClick={guardar}
                   disabled={!form.nombre || !form.nickname || !form.categoria}
                 >
-                  Guardar
+                  {editingId ? "Guardar Cambios" : "Crear Robot"}
                 </button>
               </div>
-
             </div>
           </div>
         </div>

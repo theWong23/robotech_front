@@ -1,5 +1,6 @@
 import { useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+// 1. Agregamos 'Link' a la importación
+import { useNavigate, Link } from "react-router-dom"; 
 import axios from "axios";
 import Swal from "sweetalert2";
 import AuthContext from "../context/AuthContext";
@@ -30,9 +31,6 @@ export default function Login() {
       Swal.close();
 
       const { token, rol, entidad } = data;
-
-      console.log("ROL:", rol);
-      console.log("ENTIDAD:", entidad);
 
       // ⛔ Bloquear administradores
       if (rol === "ADMINISTRADOR" || rol === "SUBADMINISTRADOR") {
@@ -67,9 +65,7 @@ export default function Login() {
 
     } catch (error) {
       Swal.close();
-
-      const mensaje =
-        typeof error?.response?.data === "string"
+      const mensaje = typeof error?.response?.data === "string"
           ? error.response.data
           : "Correo o contraseña incorrectos";
 
@@ -84,14 +80,11 @@ export default function Login() {
   return (
     <>
       {/* NAVBAR */}
-      <nav
-        className="navbar navbar-expand-lg"
-        style={{ backgroundColor: "#00b3b3" }}
-      >
+      <nav className="navbar navbar-expand-lg" style={{ backgroundColor: "#00b3b3" }}>
         <div className="container">
-          <a className="navbar-brand" href="/">
+          <Link className="navbar-brand" to="/">
             <img src="/img/logo.jpg" alt="Logo" height="50" />
-          </a>
+          </Link>
         </div>
       </nav>
 
@@ -148,9 +141,10 @@ export default function Login() {
                 </a>
                 <p className="small mb-0">
                   ¿No tienes cuenta?{" "}
-                  <a href="#" className="text-primary fw-bold">
+                  {/* 2. Aquí cambiamos el <a> por <Link> */}
+                  <Link to="/register" className="text-primary fw-bold">
                     Regístrate
-                  </a>
+                  </Link>
                 </p>
               </div>
             </form>

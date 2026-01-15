@@ -1,7 +1,7 @@
 import api from "./axiosConfig";
 
 export const login = async (correo, contrasena) => {
-  const res = await api.post("/api/auth/login", {
+  const res = await api.post("/auth/login", {
     correo,
     contrasena
   });

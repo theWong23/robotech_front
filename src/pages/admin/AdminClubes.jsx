@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
-import api from "../../services/api";
+import api from "../../services/axiosConfig"; // 👈 ÚNICO CAMBIO: Corregido para que cargue
 
 export default function Clubes() {
 
@@ -31,7 +31,8 @@ export default function Clubes() {
   const cargarClubes = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/api/admin/clubes", {
+      // axiosConfig ya tiene /api, así que la ruta es /admin/clubes
+      const res = await api.get("/admin/clubes", {
         params: { nombre: busqueda }
       });
       setClubes(res.data);
@@ -60,7 +61,7 @@ export default function Clubes() {
 
   const crearClub = async () => {
     try {
-      await api.post("/api/admin/clubes", form);
+      await api.post("/admin/clubes", form);
       Swal.fire("✔ Club creado", "El club fue registrado correctamente", "success");
       setModalOpen(false);
       cargarClubes();
@@ -74,7 +75,7 @@ export default function Clubes() {
   // =====================================
   const guardarClub = async () => {
     try {
-      await api.put(`/api/admin/clubes/${editando.idClub}`, editando);
+      await api.put(`/admin/clubes/${editando.idClub}`, editando);
       Swal.fire("✔ Club actualizado", "", "success");
       setEditando(null);
       cargarClubes();
@@ -102,7 +103,7 @@ export default function Clubes() {
     if (!confirm.isConfirmed) return;
 
     try {
-      await api.put(`/api/admin/clubes/${club.idClub}`, {
+      await api.put(`/admin/clubes/${club.idClub}`, {
         ...club,
         estado: nuevoEstado
       });

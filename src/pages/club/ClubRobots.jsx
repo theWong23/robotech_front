@@ -9,7 +9,7 @@ const ClubRobots = () => {
   useEffect(() => {
     const cargarRobots = async () => {
       try {
-        const res = await api.get("/api/club/robots");
+        const res = await api.get("/club/robots");
         setRobots(res.data);
       } catch (err) {
         console.error("Error cargando robots", err);

@@ -4,46 +4,42 @@ import Swal from "sweetalert2";
 
 export default function Register() {
 
+  // --- VALIDACIONES DE FRONTEND (FORMATO) ---
   const validarNombreHumano = (texto) => {
     if (!texto) return "Este campo es obligatorio.";
+    const limpio = texto.trim();
 
-  const limpio = texto.trim();
-
-  // Solo letras y espacios
-  if (!/^[A-Za-zÁÉÍÓÚáéíóúñÑ ]+$/.test(limpio)) {
-    return "Solo se permiten letras y espacios.";
-  }
-
-  // Mínimo 5 letras totales (sin contar espacios)
-  const letras = limpio.replace(/\s+/g, "");
-  if (letras.length < 3) {
-    return "Debe tener al menos 5 letras.";
-  }
-
-  // Cada palabra mínimo 3 letras (Juan, María, Carlos)
-  const palabras = limpio.split(" ");
-  for (let p of palabras) {
-    if (p.length > 0 && p.length < 3) {
-      return "Cada nombre debe tener al menos 3 letras.";
+    // Solo letras y espacios
+    if (!/^[A-Za-zÁÉÍÓÚáéíóúñÑ ]+$/.test(limpio)) {
+      return "Solo se permiten letras y espacios.";
     }
-  }
+    // Mínimo 5 letras totales
+    const letras = limpio.replace(/\s+/g, "");
+    if (letras.length < 3) {
+      return "Debe tener al menos 3 letras.";
+    }
+    // Cada palabra mínimo 3 letras
+    const palabras = limpio.split(" ");
+    for (let p of palabras) {
+      if (p.length > 0 && p.length < 3) {
+        return "Cada nombre debe tener al menos 3 letras.";
+      }
+    }
+    // Vocales
+    if (!/[AEIOUÁÉÍÓÚaeiouáéíóú]/.test(limpio)) {
+      return "Debe contener al menos una vocal.";
+    }
+    return ""; 
+  };
 
-  // Debe contener al menos una vocal
-  if (!/[AEIOUÁÉÍÓÚaeiouáéíóú]/.test(limpio)) {
-    return "Debe contener al menos una vocal.";
-  }
-
-  return ""; 
-};
-
-  // Paso 1 → validar código
+  // --- ESTADOS ---
   const [codigo, setCodigo] = useState("");
   const [codigoValido, setCodigoValido] = useState(false);
   const [club, setClub] = useState(null);
 
-  // Paso 2 → datos del competidor (controlled form)
+  // Usamos plurales (nombres/apellidos) para coincidir con Java
   const [form, setForm] = useState({
-    nombres: "",
+    nombres: "",  
     apellidos: "",
     dni: "",
     correo: "",
@@ -51,7 +47,6 @@ export default function Register() {
     contrasena: "",
   });
 
-  // Errores en vivo por campo
   const [errores, setErrores] = useState({
     nombres: "",
     apellidos: "",
@@ -63,31 +58,32 @@ export default function Register() {
 
   const [mostrarContra, setMostrarContra] = useState(false);
 
-  // función de cambio centralizada con validaciones en vivo
+  // --- MANEJO DE INPUTS ---
   const cambiar = (e) => {
     const { name, value: rawValue } = e.target;
     let value = rawValue;
     let msg = "";
 
-    // Normalizaciones/sanitizaciones
+    // DNI: solo números, max 8
     if (name === "dni") {
-      // solo dígitos, máximo 8
       value = rawValue.replace(/\D/g, "").slice(0, 8);
       if (value.length > 0 && value.length < 8) msg = "El DNI debe tener 8 dígitos.";
       if (value.length === 0) msg = "El DNI es obligatorio.";
     }
 
+    // Teléfono: solo números, max 9
     if (name === "telefono") {
-      // solo dígitos, máximo 9
       value = rawValue.replace(/\D/g, "").slice(0, 9);
       if (value.length > 0 && value.length < 9) msg = "El teléfono debe tener 9 dígitos.";
       if (value.length === 0) msg = "El teléfono es obligatorio.";
     }
 
+    // Nombres y Apellidos
     if (name === "nombres" || name === "apellidos") {
       msg = validarNombreHumano(value);
     }
 
+    // Correo
     if (name === "correo") {
       if (value) {
         const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -97,22 +93,21 @@ export default function Register() {
       }
     }
 
+    // Contraseña
     if (name === "contrasena") {
-      // Reglas: mínimo 8, mayúscula, número, símbolo
       const reglas = [];
       if (value.length < 8) reglas.push("mínimo 8 caracteres");
       if (!/[A-Z]/.test(value)) reglas.push("una mayúscula");
       if (!/[0-9]/.test(value)) reglas.push("un número");
-      if (!/[!@#$%^&*.,?]/.test(value)) reglas.push("un símbolo (ej. !@#)");
+      if (!/[!@#$%^&*.,?]/.test(value)) reglas.push("un símbolo");
       msg = reglas.length > 0 ? `Falta: ${reglas.join(", ")}` : "";
     }
 
-    // Actualizar estado del formulario y errores
     setForm((prev) => ({ ...prev, [name]: value }));
     setErrores((prev) => ({ ...prev, [name]: msg }));
   };
 
-  // 🔥 VALIDAR CÓDIGO
+  // --- VALIDAR CÓDIGO CLUB ---
   const validarCodigo = async () => {
     if (!codigo) {
       Swal.fire("Código vacío", "Ingresa un código primero", "warning");
@@ -120,6 +115,7 @@ export default function Register() {
     }
 
     try {
+      // Ajusta esta URL si tu endpoint de códigos es diferente
       const res = await axios.get(`http://localhost:8080/api/codigos/validar/${codigo}`);
 
       Swal.fire({
@@ -135,83 +131,71 @@ export default function Register() {
       Swal.fire({
         icon: "error",
         title: "Código inválido ❌",
-        text: err.response?.data || "Este código no existe, expiró o ya fue usado"
+        text: err.response?.data || "Este código no existe o expiró"
       });
     }
   };
 
-  // REGISTRAR COMPETIDOR
+  // --- REGISTRAR USUARIO ---
   const registrar = async (e) => {
     e.preventDefault();
 
-    // VALIDACIONES FINALES (reafirmar)
-    // nombres/apellidos
+    // 1. RE-VALIDACIÓN FINAL DEL FRONT
     const errorNombre = validarNombreHumano(form.nombres);
-    if (errorNombre) {
-      Swal.fire("Nombre inválido", errorNombre, "warning");
-      return;
-    }
+    if (errorNombre) { Swal.fire("Nombre inválido", errorNombre, "warning"); return; }
 
     const errorApellido = validarNombreHumano(form.apellidos);
-    if (errorApellido) {
-      Swal.fire("Apellido inválido", errorApellido, "warning");
-      return;
-    }
+    if (errorApellido) { Swal.fire("Apellido inválido", errorApellido, "warning"); return; }
 
-    // DNI: solo números y 8 dígitos
-    if (!/^[0-9]{8}$/.test(form.dni)) {
-      Swal.fire("DNI inválido", "Debe contener exactamente 8 números.", "warning");
-      return;
-    }
+    if (!/^[0-9]{8}$/.test(form.dni)) { Swal.fire("DNI inválido", "Debe contener 8 números.", "warning"); return; }
 
-    // Correo formato válido
     const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!regexCorreo.test(form.correo)) {
-      Swal.fire("Correo inválido", "Ingresa un correo electrónico válido.", "warning");
+    if (!regexCorreo.test(form.correo)) { Swal.fire("Correo inválido", "Formato incorrecto.", "warning"); return; }
+
+    if (!/^[0-9]{9}$/.test(form.telefono)) { Swal.fire("Teléfono inválido", "Debe tener 9 números.", "warning"); return; }
+
+    if (form.contrasena.length < 8 || !/[A-Z]/.test(form.contrasena) || !/[0-9]/.test(form.contrasena) || !/[!@#$%^&*.,?]/.test(form.contrasena)) {
+      Swal.fire("Contraseña inválida", "No cumple los requisitos de seguridad.", "warning");
       return;
     }
 
-    // Teléfono: 9 números
-    if (!/^[0-9]{9}$/.test(form.telefono)) {
-      Swal.fire("Teléfono inválido", "Debe tener 9 números.", "warning");
-      return;
-    }
-
-    // Contraseña: reglas estrictas (coherente con checklist)
-    if (
-      form.contrasena.length < 8 ||
-      !/[A-Z]/.test(form.contrasena) ||
-      !/[0-9]/.test(form.contrasena) ||
-      !/[!@#$%^&*.,?]/.test(form.contrasena)
-    ) {
-      Swal.fire("Contraseña inválida", "La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, un número y un símbolo.", "warning");
-      return;
-    }
-
+    // 2. ENVÍO AL BACKEND
     try {
       const payload = {
-        nombre: form.nombres.trim(),
-        apellido: form.apellidos.trim(),
+        nombres: form.nombres.trim(),     // Plural (coincide con Java)
+        apellidos: form.apellidos.trim(), // Plural (coincide con Java)
         dni: form.dni,
         correo: form.correo,
         telefono: form.telefono,
         contrasena: form.contrasena,
-        codigoClub: codigo      // 👈 el club viene del código
+        codigoClub: codigo.trim()
       };
-      console.log("PAYLOAD REGISTRO:", payload);
+      
+      console.log("Enviando payload:", payload);
 
-
-      await axios.post("http://localhost:8080/api/auth/registro/competidor", payload);
+      // Enviamos a la ruta del UsuarioController
+      await axios.post("http://localhost:8080/api/usuarios", payload);
 
       Swal.fire({
         icon: "success",
-        title: "Registro enviado ✔",
-        text: "El club debe aprobar tu solicitud."
+        title: "¡Registro Exitoso! 🎉",
+        text: "Tu cuenta ha sido creada correctamente."
       }).then(() => {
         window.location.href = "/login";
       });
+
     } catch (err) {
-      Swal.fire("Error", err.response?.data || "No se pudo registrar", "error");
+      console.error("Error backend:", err);
+      
+      // 3. CAPTURA DEL ERROR DEL VALIDADOR (INSULTOS)
+      // Spring Boot devuelve el mensaje en .message o directamente en data dependiendo de la config
+      const mensajeBackend = err.response?.data?.message || err.response?.data || "Ocurrió un error inesperado";
+
+      Swal.fire({
+        icon: "error", 
+        title: "No se pudo registrar", 
+        text: mensajeBackend // Aquí saldrá: "El texto contiene palabras inapropiadas"
+      });
     }
   };
 
@@ -241,7 +225,6 @@ export default function Register() {
               onChange={(e) => setCodigo(e.target.value)}
               placeholder="Ingresa tu código"
             />
-
             <button className="btn btn-primary w-100" onClick={validarCodigo}>
               Validar Código
             </button>
@@ -327,7 +310,7 @@ export default function Register() {
               </button>
             </div>
 
-            {/* Checklist (visual) */}
+            {/* Checklist */}
             <ul className="mt-2 small mb-0" style={{ listStyle: "none", paddingLeft: 0 }}>
               <li style={{ color: form.contrasena.length >= 8 ? "green" : "red" }}>
                 {form.contrasena.length >= 8 ? "✔" : "•"} Mínimo 8 caracteres
@@ -339,7 +322,7 @@ export default function Register() {
                 {/[0-9]/.test(form.contrasena) ? "✔" : "•"} Incluye un número
               </li>
               <li style={{ color: /[!@#$%^&*.,?]/.test(form.contrasena) ? "green" : "red" }}>
-                {/[!@#$%^&*.,?]/.test(form.contrasena) ? "✔" : "•"} Incluye un símbolo (! @ # $ ...)
+                {/[!@#$%^&*.,?]/.test(form.contrasena) ? "✔" : "•"} Incluye un símbolo
               </li>
             </ul>
             <div className="invalid-feedback d-block">{errores.contrasena}</div>

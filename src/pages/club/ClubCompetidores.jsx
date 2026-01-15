@@ -23,7 +23,8 @@ export default function ClubCompetidores() {
   const cargar = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/api/competidores/club/${idClub}`);
+      // ⚠️ CORREGIDO: Se quitó "/api"
+      const res = await api.get(`/competidores/club/${idClub}`);
       setLista(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error(err);
@@ -42,7 +43,8 @@ export default function ClubCompetidores() {
   // ============================
   const aprobar = async (id) => {
     try {
-      await api.put(`/api/competidores/${id}/aprobar`);
+      // ⚠️ CORREGIDO: Se quitó "/api"
+      await api.put(`/competidores/${id}/aprobar`);
       Swal.fire("Aprobado", "Competidor activado", "success");
       cargar();
     } catch {
@@ -52,7 +54,8 @@ export default function ClubCompetidores() {
 
   const rechazar = async (id) => {
     try {
-      await api.put(`/api/competidores/${id}/rechazar`);
+      // ⚠️ CORREGIDO: Se quitó "/api"
+      await api.put(`/competidores/${id}/rechazar`);
       Swal.fire("Rechazado", "Competidor rechazado", "warning");
       cargar();
     } catch {
@@ -83,7 +86,7 @@ export default function ClubCompetidores() {
           {lista.length === 0 && !loading ? (
             <tr>
               <td colSpan="4" className="text-center text-muted">
-                No hay competidores
+                No hay competidores registrados en tu club.
               </td>
             </tr>
           ) : (
@@ -93,7 +96,7 @@ export default function ClubCompetidores() {
                 <td>{c.dni}</td>
                 <td>
                   <span className={`badge ${
-                    c.estadoValidacion === "APROBADO"
+                    c.estadoValidacion === "APROBADO" || c.estadoValidacion === "VALIDADO"
                       ? "bg-success"
                       : c.estadoValidacion === "RECHAZADO"
                       ? "bg-danger"
@@ -109,13 +112,13 @@ export default function ClubCompetidores() {
                         className="btn btn-success btn-sm me-2"
                         onClick={() => aprobar(c.idCompetidor)}
                       >
-                        Aprobar
+                        ✅ Aprobar
                       </button>
                       <button
                         className="btn btn-danger btn-sm"
                         onClick={() => rechazar(c.idCompetidor)}
                       >
-                        Rechazar
+                        ❌ Rechazar
                       </button>
                     </>
                   )}

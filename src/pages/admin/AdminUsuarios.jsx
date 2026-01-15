@@ -80,7 +80,7 @@ export default function AdminUsuarios() {
   // ============================
   const cargar = async () => {
     try {
-      const res = await api.get("/api/admin/usuarios");
+      const res = await api.get("/admin/usuarios");
       setUsuarios(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       handleApiError(err, "No se pudo cargar la lista de usuarios");
@@ -193,7 +193,7 @@ export default function AdminUsuarios() {
           estado: form.estado,
         };
 
-        await api.post("/api/admin/usuarios", payload);
+        await api.post("/admin/usuarios", payload);
         Swal.fire("✔ Usuario creado", "", "success");
       } else {
         // UPDATE: NO manda contrasena (se cambia en modal pass)
@@ -206,7 +206,7 @@ export default function AdminUsuarios() {
           estado: form.estado,
         };
 
-        await api.put(`/api/admin/usuarios/${editingId}`, payload);
+        await api.put(`/admin/usuarios/${editingId}`, payload);
         Swal.fire("✔ Usuario actualizado", "", "success");
       }
 
@@ -237,7 +237,7 @@ export default function AdminUsuarios() {
       // await api.put(`/api/admin/usuarios/${id}/desactivar`);
 
       // ✅ Si tu backend aún usa DELETE (ojo con FK)
-      await api.delete(`/api/admin/usuarios/${id}`);
+      await api.delete(`/admin/usuarios/${id}`);
 
       Swal.fire("Listo", "Usuario desactivado/eliminado", "success");
       await cargar();
@@ -257,7 +257,7 @@ export default function AdminUsuarios() {
 
     try {
       await api.put(
-        `/api/admin/usuarios/${passId}/password`,
+        `/admin/usuarios/${passId}/password`,
         newPass,
         { headers: { "Content-Type": "text/plain" } }
       );

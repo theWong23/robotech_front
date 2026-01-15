@@ -17,7 +17,7 @@ export default function ClubInscribirEquipo({ categoria }) {
   }, [categoria]);
 
   useEffect(() => {
-    api.get("/api/club/robots")
+    api.get("/club/robots")
       .then((res) => setRobots(res.data))
       .catch(() => Swal.fire("Error", "No se pudieron cargar los robots", "error"))
       .finally(() => setLoading(false));

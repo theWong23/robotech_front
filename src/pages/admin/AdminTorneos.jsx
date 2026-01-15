@@ -28,8 +28,8 @@ export default function AdminTorneos() {
     try {
       setLoading(true);
       setError(null);
-
-      const res = await api.get("/api/admin/torneos");
+      // ⚠️ CORREGIDO: Se quitó "/api"
+      const res = await api.get("/admin/torneos");
       setTorneos(Array.isArray(res.data) ? res.data : []);
 
     } catch (err) {
@@ -50,7 +50,8 @@ export default function AdminTorneos() {
   // =============================
   const cambiarEstado = async (idTorneo, nuevoEstado) => {
     try {
-      await api.put(`/api/admin/torneos/${idTorneo}/estado`, {
+      // ⚠️ CORREGIDO: Se quitó "/api"
+      await api.put(`/admin/torneos/${idTorneo}/estado`, {
         estado: nuevoEstado
       });
 
@@ -69,10 +70,12 @@ export default function AdminTorneos() {
   const guardar = async () => {
     try {
       if (!editingId) {
-        await api.post("/api/admin/torneos", form);
+        // ⚠️ CORREGIDO: Se quitó "/api"
+        await api.post("/admin/torneos", form);
         Swal.fire("✔ Torneo creado", "", "success");
       } else {
-        await api.put(`/api/admin/torneos/${editingId}`, form);
+        // ⚠️ CORREGIDO: Se quitó "/api"
+        await api.put(`/admin/torneos/${editingId}`, form);
         Swal.fire("✔ Torneo actualizado", "", "success");
       }
 
@@ -99,7 +102,8 @@ export default function AdminTorneos() {
     if (!confirm.isConfirmed) return;
 
     try {
-      await api.delete(`/api/admin/torneos/${id}`);
+      // ⚠️ CORREGIDO: Se quitó "/api"
+      await api.delete(`/admin/torneos/${id}`);
       Swal.fire("✔ Eliminado", "", "success");
       cargar();
     } catch (err) {
@@ -112,8 +116,10 @@ export default function AdminTorneos() {
     fecha ? new Date(fecha).toLocaleString() : "—";
 
   const gestionarCategorias = (id) => {
-  window.location.href = `/admin/torneos/${id}/categorias`;
-};
+    // Esto es una ruta de React Router (Frontend), así que está bien sin cambios
+    // Sugerencia: Usar navigate() de react-router-dom es mejor que window.location.href para SPAs
+    window.location.href = `/admin/torneos/${id}/categorias`;
+  };
 
   // =============================
   //   RENDER DEFENSIVO
@@ -169,7 +175,7 @@ export default function AdminTorneos() {
         <tbody>
           {torneos.length === 0 ? (
             <tr>
-              <td colSpan="6" className="text-center">
+              <td colSpan="7" className="text-center">
                 No hay torneos registrados
               </td>
             </tr>

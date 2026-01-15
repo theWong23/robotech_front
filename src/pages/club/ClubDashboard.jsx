@@ -17,7 +17,8 @@ export default function ClubDashboard() {
   // ============================
   const cargarClub = useCallback(async () => {
     try {
-      const res = await api.get(`/api/clubes/${idClub}`);
+      // ⚠️ CORREGIDO: Se quitó "/api" porque axiosConfig ya lo tiene
+      const res = await api.get(`/clubes/${idClub}`);
       setClub(res.data);
     } catch (err) {
       console.error(err);
@@ -34,7 +35,8 @@ export default function ClubDashboard() {
   // ============================
   const cargarCodigos = useCallback(async () => {
     try {
-      const res = await api.get(`/api/codigos/club/${idClub}`);
+      // ⚠️ CORREGIDO: Se quitó "/api" (Esto arregla el error 404)
+      const res = await api.get(`/codigos/club/${idClub}`);
       setCodigos(res.data);
     } catch (err) {
       console.error(err);
@@ -80,8 +82,9 @@ export default function ClubDashboard() {
     if (!valores) return;
 
     try {
+      // ⚠️ CORREGIDO: Se quitó "/api"
       const res = await api.post(
-        `/api/codigos/${idClub}/generar`,
+        `/codigos/${idClub}/generar`,
         {
           horasExpiracion: Number(valores.horas),
           limiteUso: Number(valores.limite)
@@ -129,12 +132,12 @@ export default function ClubDashboard() {
 
         <div className="club-stats">
           <div>
-            <h4>{club.totalCompetidores}</h4>
+            <h4>{club.totalCompetidores || 0}</h4>
             <span>Competidores</span>
           </div>
 
           <div>
-            <h4>{club.totalRobots}</h4>
+            <h4>{club.totalRobots || 0}</h4>
             <span>Robots</span>
           </div>
 

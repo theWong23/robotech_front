@@ -18,10 +18,10 @@ export default function AdminGenerarEncuentros() {
   // Cargar jueces y coliseos
   // -----------------------------
   useEffect(() => {
-    api.get("/api/admin/jueces")
+    api.get("/admin/jueces")
       .then(r => setJueces(r.data));
 
-    api.get("/api/admin/coliseos")
+    api.get("/admin/coliseos")
       .then(r => setColiseos(r.data));
   }, []);
 
@@ -35,7 +35,7 @@ export default function AdminGenerarEncuentros() {
     }
 
     try {
-      await api.post("/api/admin/encuentros/generar", {
+      await api.post("/admin/encuentros/generar", {
         idCategoriaTorneo,
         tipoEncuentro,
         idJuez,

@@ -15,7 +15,7 @@ export default function AdminEncuentros() {
   // -------------------------------
   const cargarCategorias = async () => {
     try {
-      const res = await api.get("/api/admin/encuentros/categorias");
+      const res = await api.get("/admin/encuentros/categorias");
       setCategorias(res.data);
     } catch (err) {
       console.error(err);

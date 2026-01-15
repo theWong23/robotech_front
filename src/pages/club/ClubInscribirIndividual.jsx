@@ -16,7 +16,7 @@ export default function ClubInscribirIndividual({ categoria }) {
   useEffect(() => {
   setLoading(true);
 
-  api.get(`/api/club/inscripciones/robots-disponibles/${categoria.idCategoriaTorneo}`)
+  api.get(`/club/inscripciones/robots-disponibles/${categoria.idCategoriaTorneo}`)
     .then(res => setRobots(res.data))
     .catch(() =>
       Swal.fire("Error", "No se pudieron cargar los robots", "error")
