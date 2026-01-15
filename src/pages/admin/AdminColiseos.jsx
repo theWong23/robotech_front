@@ -24,7 +24,7 @@ export default function AdminColiseos() {
 
   const cargar = async () => {
     try {
-      const res = await api.get("/api/admin/coliseos");
+      const res = await api.get("/admin/coliseos");
       setColiseos(res.data);
     } catch (err) {
       Swal.fire("Error", "No se pudo cargar coliseos", "error");
@@ -56,10 +56,10 @@ export default function AdminColiseos() {
 
     // 1️⃣ CREAR O EDITAR COLISEO
     if (!editingId) {
-      res = await api.post("/api/admin/coliseos", form);
+      res = await api.post("/admin/coliseos", form);
       Swal.fire("✔ Coliseo creado", "", "success");
     } else {
-      res = await api.put(`/api/admin/coliseos/${editingId}`, form);
+      res = await api.put(`/admin/coliseos/${editingId}`, form);
       Swal.fire("✔ Coliseo actualizado", "", "success");
     }
 
@@ -71,7 +71,7 @@ export default function AdminColiseos() {
       data.append("file", imagen);
 
       await api.post(
-        `/api/admin/coliseos/${idColiseo}/imagen`,
+        `/admin/coliseos/${idColiseo}/imagen`,
         data,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -102,7 +102,7 @@ export default function AdminColiseos() {
     if (!confirm.isConfirmed) return;
 
     try {
-      await api.delete(`/api/admin/coliseos/${id}`);
+      await api.delete(`/admin/coliseos/${id}`);
       Swal.fire("Coliseo eliminado", "", "success");
       cargar();
     } catch (err) {

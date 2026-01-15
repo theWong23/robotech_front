@@ -12,7 +12,7 @@ export default function AdminInscripcion() {
   // ---------------------------------
   const cargar = async () => {
     try {
-      const res = await api.get("/api/admin/inscripciones");
+      const res = await api.get("/admin/inscripciones");
       setInscripciones(res.data || []);
     } catch (err) {
       console.error("Error cargando inscripciones", err);
@@ -47,7 +47,7 @@ export default function AdminInscripcion() {
     if (!isConfirmed) return;
 
     try {
-      await api.put(`/api/admin/inscripciones/${id}/anular`);
+      await api.put(`/admin/inscripciones/${id}/anular`);
       Swal.fire(
         "Anulada",
         "La inscripción fue anulada correctamente",

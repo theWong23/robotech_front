@@ -191,7 +191,7 @@ export default function Clubes() {
     };
 
     try {
-      await api.post("/api/admin/clubes", payload);
+      await api.post("/admin/clubes", payload);
       await Swal.fire("✔ Club creado", "El club fue registrado correctamente", "success");
       setModalOpen(false);
       cargarClubes();
