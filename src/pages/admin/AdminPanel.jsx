@@ -11,7 +11,9 @@ export default function AdminPanel() {
     { label: "Gestionar Clubes", to: "clubes" },
     { label: "Gestionar Subadministrador", to: "subadmin" },
     { label: "Gestionar Robots", to: "robots" },
-    { label: "Gestionar Encuentros", to: "encuentros"}
+    { label: "Gestionar Encuentros", to: "encuentros"},
+    { label: "Gestion de Coliseos", to: "Coliseos"},
+    { label: "Gestion de Inscripciones", to: "Inscripciones" }
   ];
 
   return (
