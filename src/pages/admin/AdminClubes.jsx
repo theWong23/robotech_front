@@ -1,18 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Swal from "sweetalert2";
-import api from "../../services/axiosConfig"; // 👈 ÚNICO CAMBIO: Corregido para que cargue
+import { FaPlus, FaSearch, FaEdit, FaPowerOff, FaBuilding, FaUserTie, FaEnvelope, FaPhone, FaMapMarkerAlt } from "react-icons/fa";
+import api from "../../services/axiosConfig";
 
 export default function Clubes() {
+  // =========================
+  // ESTADOS
+  // =========================
   const [busqueda, setBusqueda] = useState("");
   const [clubes, setClubes] = useState([]);
-  const [editando, setEditando] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  // Modals
   const [modalOpen, setModalOpen] = useState(false);
+  const [editando, setEditando] = useState(null);
 
+  // Suggestions (UX feature recibida del backend)
   const [emailSuggestions, setEmailSuggestions] = useState([]);
   const [emailSuggestionsField, setEmailSuggestionsField] = useState(null);
 
-  const [form, setForm] = useState({
+  const initialForm = {
     nombre: "",
     correoContacto: "",
     telefonoContacto: "",
@@ -22,520 +29,373 @@ export default function Clubes() {
     correoPropietario: "",
     telefonoPropietario: "",
     contrasenaPropietario: ""
-  });
+  };
+
+  const [form, setForm] = useState(initialForm);
 
   // =========================
-  // Helpers
+  // UTILS
   // =========================
-  const esEmailValido = (email) =>
-    /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$/.test((email || "").trim());
-
-  const esCelularPeruValido = (tel) =>
-    /^9\d{8}$/.test((tel || "").trim());
-
-  const normalizarEmail = (email) => (email || "").trim().toLowerCase();
-
   const setField = (k, v) => setForm((prev) => ({ ...prev, [k]: v }));
 
-  const toast = (title, text, icon = "info") =>
-    Swal.fire({ title, text, icon });
-
-  const mostrarErroresPorCampo = async (obj) => {
-    const mensajes = Object.entries(obj)
-      .map(([campo, msg]) => `• <b>${campo}</b>: ${msg}`)
-      .join("<br/>");
-
-    await Swal.fire({
-      icon: "error",
-      title: "Revisa el formulario",
-      html: mensajes
-    });
-  };
-
-  // Si backend devuelve ApiErrorDTO:
-  // { code, message, fieldErrors, suggestions }
+  // =========================
+  // API ERROR HANDLING
+  // =========================
   const manejarErrorApi = async (err) => {
-    const status = err.response?.status;
     const data = err.response?.data;
 
-    // console debug (puedes borrarlo luego)
-    console.log("STATUS:", status);
-    console.log("DATA:", data);
-
-    // Backend manda string plano
     if (typeof data === "string") {
-      await Swal.fire("Error", data, "error");
-      return;
+      return Swal.fire("Error", data, "error");
     }
 
-    // Si viene el formato ApiErrorDTO
-    const code = data?.code;
-    const message = data?.message;
-    const fieldErrors = data?.fieldErrors;
-    const suggestions = data?.suggestions;
-
-    // 1) EMAIL_TAKEN con sugerencias
+    // Caso: Correo ya existe con sugerencias (Lógica de negocio del backend)
     if (data?.code === "EMAIL_TAKEN") {
-      const field = data?.fieldErrors?.field; // "correoContacto" o "correoPropietario"
+      const field = data?.fieldErrors?.field; 
       setEmailSuggestionsField(field);
       setEmailSuggestions(data.suggestions || []);
-      Swal.fire("Correo en uso", data.message, "warning");
-      return;
+      return Swal.fire("Correo en uso", data.message, "warning");
     }
 
-
-    // 2) Errores por campo (puede venir como { campo: msg } o como ApiErrorDTO.fieldErrors)
-    if (fieldErrors && typeof fieldErrors === "object") {
-      await mostrarErroresPorCampo(fieldErrors);
-      return;
-    }
-    if (data && typeof data === "object" && !Array.isArray(data) && !code) {
-      // Caso viejo: map directo { campo: msg }
-      await mostrarErroresPorCampo(data);
-      return;
+    // Caso: Errores de validación de campos (JSR-303/Jakarta Bean Validation)
+    const fieldErrors = data?.fieldErrors;
+    if (fieldErrors && typeof fieldErrors === "object" && !data.code) {
+      const mensajes = Object.entries(fieldErrors)
+        .map(([campo, msg]) => `• <b>${campo}</b>: ${msg}`)
+        .join("<br/>");
+      return Swal.fire({ icon: "error", title: "Datos inválidos", html: mensajes });
     }
 
-    // 3) Mensaje genérico
-    await Swal.fire("Error", message || "Ocurrió un error", "error");
+    // Fallback genérico
+    Swal.fire("Error", data?.message || "Ocurrió un error inesperado", "error");
   };
 
   // =========================
-  // Cargar clubes
+  // CARGA DE DATOS
   // =========================
-  useEffect(() => {
-    cargarClubes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [busqueda]);
-
-  const cargarClubes = async () => {
+  const cargarClubes = useCallback(async (termino = "") => {
+    setLoading(true);
     try {
-      setLoading(true);
-      // axiosConfig ya tiene /api, así que la ruta es /admin/clubes
-      const res = await api.get("/admin/clubes", {
-        params: { nombre: busqueda }
-      });
-      setClubes(res.data);
+      // El backend se encarga de filtrar por nombre si le llega el parametro
+      const res = await api.get("/admin/clubes", { params: { nombre: termino } });
+      setClubes(res.data || []);
     } catch {
-      toast("Error", "No se pudo cargar los clubes", "error");
+      Swal.fire("Error", "No se pudo cargar la lista de clubes", "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Debounce para búsqueda
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      cargarClubes(busqueda);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [busqueda, cargarClubes]);
 
   // =========================
-  // Modal crear
+  // LOGICA CREAR (Cliente Ligero)
   // =========================
-  const abrirModal = () => {
+  const abrirModalCrear = () => {
     setEmailSuggestions([]);
-    setForm({
-      nombre: "",
-      correoContacto: "",
-      telefonoContacto: "",
-      direccionFiscal: "",
-      nombresPropietario: "",
-      apellidosPropietario: "",
-      correoPropietario: "",
-      telefonoPropietario: "",
-      contrasenaPropietario: ""
-    });
+    setForm(initialForm);
     setModalOpen(true);
   };
 
-  const validarAntesDeEnviar = () => {
-    // requeridos
-    const req = [
-      ["nombre", "Nombre del club"],
-      ["correoContacto", "Correo de contacto"],
-      ["telefonoContacto", "Teléfono de contacto"],
-      ["nombresPropietario", "Nombres del propietario"],
-      ["apellidosPropietario", "Apellidos del propietario"],
-      ["correoPropietario", "Correo del propietario"],
-      ["telefonoPropietario", "Teléfono del propietario"],
-      ["contrasenaPropietario", "Contraseña"]
+  const crearClub = async () => {
+    // Validación mínima: Solo chequear campos vacíos
+    const required = [
+      "nombre", "correoContacto", "telefonoContacto", 
+      "nombresPropietario", "apellidosPropietario", "correoPropietario", 
+      "telefonoPropietario", "contrasenaPropietario"
     ];
 
-    const faltantes = req
-      .filter(([k]) => !String(form[k] || "").trim())
-      .map(([, label]) => label);
-
-    if (faltantes.length) {
-      toast("Campos incompletos", `Completa: ${faltantes.join(", ")}`, "warning");
-      return false;
+    const vacios = required.filter(k => !form[k]?.trim());
+    if (vacios.length > 0) {
+        return Swal.fire("Campos incompletos", "Por favor completa todos los campos obligatorios.", "warning");
     }
 
-    // emails
-    if (!esEmailValido(form.correoContacto) || !esEmailValido(form.correoPropietario)) {
-      toast("Correo inválido", "Revisa el formato del correo", "warning");
-      return false;
-    }
-
-    // celulares Perú
-    if (!esCelularPeruValido(form.telefonoContacto) || !esCelularPeruValido(form.telefonoPropietario)) {
-      toast("Celular inválido", "Debe tener 9 dígitos y empezar con 9", "warning");
-      return false;
-    }
-
-    return true;
-  };
-
-  const crearClub = async () => {
-    setEmailSuggestions([]);
-
-    if (!validarAntesDeEnviar()) return;
-
-    // normaliza emails antes de enviar (buena práctica)
-    const payload = {
-      ...form,
-      correoContacto: normalizarEmail(form.correoContacto),
-      correoPropietario: normalizarEmail(form.correoPropietario)
-    };
-
+    // El backend validará formatos de email, unicidad, longitudes, etc.
     try {
-      await api.post("/admin/clubes", payload);
-      await Swal.fire("✔ Club creado", "El club fue registrado correctamente", "success");
+      await api.post("/admin/clubes", form);
+      Swal.fire("Éxito", "Club registrado correctamente", "success");
       setModalOpen(false);
-      cargarClubes();
+      cargarClubes(busqueda);
     } catch (err) {
-      await manejarErrorApi(err);
+      manejarErrorApi(err);
     }
   };
 
   // =========================
-  // Editar club
+  // LOGICA EDITAR / ESTADO
   // =========================
-  const guardarClub = async () => {
+  const guardarEdicion = async () => {
     try {
       await api.put(`/admin/clubes/${editando.idClub}`, editando);
-      Swal.fire("✔ Club actualizado", "", "success");
+      Swal.fire("Actualizado", "Datos del club modificados", "success");
       setEditando(null);
-      cargarClubes();
+      cargarClubes(busqueda);
     } catch (err) {
-      await manejarErrorApi(err);
+      manejarErrorApi(err);
     }
   };
 
-  // =========================
-  // Activar / Desactivar
-  // =========================
   const cambiarEstado = async (club) => {
+    // El backend decide si la transición de estado es válida
     const nuevoEstado = club.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO";
+    const accion = nuevoEstado === "ACTIVO" ? "Activar" : "Desactivar";
 
-    const confirm = await Swal.fire({
-      title: `${nuevoEstado === "ACTIVO" ? "Activar" : "Desactivar"} club`,
-      text: `¿Seguro que deseas ${nuevoEstado.toLowerCase()} este club?`,
-      icon: "warning",
+    const result = await Swal.fire({
+      title: `¿${accion} club?`,
+      text: `El club pasará a estado ${nuevoEstado}`,
+      icon: "question",
       showCancelButton: true,
-      confirmButtonText: "Sí",
-      cancelButtonText: "Cancelar"
+      confirmButtonText: "Sí, cambiar",
     });
 
-    if (!confirm.isConfirmed) return;
+    if (!result.isConfirmed) return;
 
     try {
-      await api.put(`/admin/clubes/${club.idClub}`, {
-        ...club,
-        estado: nuevoEstado
-      });
-
-      await Swal.fire("✔ Estado actualizado", "", "success");
-      cargarClubes();
+      await api.put(`/admin/clubes/${club.idClub}`, { ...club, estado: nuevoEstado });
+      Swal.fire("Estado actualizado", "", "success");
+      cargarClubes(busqueda);
     } catch (err) {
-      await manejarErrorApi(err);
+      manejarErrorApi(err);
     }
   };
 
   // =========================
-  // UI: chips suggestions
+  // UI COMPONENTS
   // =========================
-  const suggestionsVisible = useMemo(
-    () => Array.isArray(emailSuggestions) && emailSuggestions.length > 0,
-    [emailSuggestions]
-  );
+  const EmailSuggestions = ({ fieldName }) => {
+    if (emailSuggestionsField !== fieldName || !emailSuggestions.length) return null;
+    return (
+      <div className="mt-1 mb-2">
+        <small className="text-muted d-block mb-1">Sugerencias disponibles:</small>
+        <div className="d-flex flex-wrap gap-2">
+          {emailSuggestions.map(s => (
+            <span 
+              key={s} 
+              className="badge bg-light text-primary border" 
+              style={{cursor: "pointer"}}
+              onClick={() => {
+                setField(fieldName, s);
+                setEmailSuggestions([]);
+              }}
+            >
+              {s}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   // =========================
-  // Render
+  // RENDER
   // =========================
   return (
-    <div className="p-4">
-      <h2 className="fw-bold mb-3">Gestión de Clubes</h2>
+    <div className="container-fluid px-4 mt-4">
+      
+      {/* HEADER */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 className="fw-bold text-dark mb-0"><FaBuilding className="me-2"/>Gestión de Clubes</h2>
+          <p className="text-muted mb-0">Administra las entidades y sus propietarios.</p>
+        </div>
+        <button className="btn btn-primary shadow-sm" onClick={abrirModalCrear}>
+          <FaPlus className="me-2"/> Registrar Club
+        </button>
+      </div>
 
-      <input
-        type="text"
-        placeholder="Buscar por nombre..."
-        className="form-control mb-3"
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-      />
+      {/* SEARCH */}
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body">
+          <div className="input-group">
+            <span className="input-group-text bg-light border-0"><FaSearch className="text-muted"/></span>
+            <input
+              type="text"
+              className="form-control border-0 bg-light"
+              placeholder="Buscar club por nombre..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
 
-      <button className="btn btn-primary mb-4" onClick={abrirModal} disabled={loading}>
-        ➕ Crear Nuevo Club
-      </button>
-
-      <table className="table table-bordered align-middle">
-        <thead className="table-dark">
-          <tr>
-            <th>Nombre</th>
-            <th>Correo</th>
-            <th>Teléfono</th>
-            <th>Estado</th>
-            <th style={{ width: 220 }}>Acciones</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {loading ? (
-            <tr><td colSpan="5" className="text-center">Cargando...</td></tr>
-          ) : clubes.length === 0 ? (
-            <tr><td colSpan="5" className="text-center">No se encontraron clubes</td></tr>
-          ) : (
-            clubes.map((c) => (
-              <tr key={c.idClub}>
-                <td>{c.nombre}</td>
-                <td>{c.correoContacto}</td>
-                <td>{c.telefonoContacto}</td>
-                <td>
-                  <span className={`badge bg-${c.estado === "ACTIVO" ? "success" : "danger"}`}>
-                    {c.estado}
-                  </span>
-                </td>
-                <td>
-                  <button className="btn btn-warning btn-sm me-2" onClick={() => setEditando({ ...c })}>
-                    Editar
-                  </button>
-
-                  <button
-                    className={`btn btn-${c.estado === "ACTIVO" ? "danger" : "success"} btn-sm`}
-                    onClick={() => cambiarEstado(c)}
-                  >
-                    {c.estado === "ACTIVO" ? "Desactivar" : "Activar"}
-                  </button>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+      {/* TABLE */}
+      <div className="card shadow-sm border-0">
+        <div className="card-body p-0">
+          <div className="table-responsive">
+            <table className="table table-hover align-middle mb-0">
+              <thead className="bg-light">
+                <tr>
+                  <th className="ps-4">Nombre del Club</th>
+                  <th>Contacto</th>
+                  <th>Ubicación</th>
+                  <th>Estado</th>
+                  <th className="text-end pe-4">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan="5" className="text-center py-5"><div className="spinner-border text-primary"/></td></tr>
+                ) : clubes.length === 0 ? (
+                  <tr><td colSpan="5" className="text-center text-muted py-5">No se encontraron clubes registrados.</td></tr>
+                ) : (
+                  clubes.map((c) => (
+                    <tr key={c.idClub}>
+                      <td className="ps-4 fw-bold text-primary">{c.nombre}</td>
+                      <td>
+                        <div className="d-flex flex-column small">
+                          <span className="text-muted"><FaEnvelope className="me-1"/>{c.correoContacto}</span>
+                          <span className="text-muted"><FaPhone className="me-1"/>{c.telefonoContacto}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <small className="text-muted"><FaMapMarkerAlt className="me-1 text-danger"/>{c.direccionFiscal || "—"}</small>
+                      </td>
+                      <td>
+                        <span className={`badge rounded-pill ${c.estado === "ACTIVO" ? "bg-success" : "bg-danger"}`}>
+                          {c.estado}
+                        </span>
+                      </td>
+                      <td className="text-end pe-4">
+                        <button 
+                          className="btn btn-outline-primary btn-sm me-2" 
+                          onClick={() => setEditando({ ...c })}
+                          title="Editar Info"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          className={`btn btn-sm ${c.estado === "ACTIVO" ? "btn-outline-danger" : "btn-outline-success"}`}
+                          onClick={() => cambiarEstado(c)}
+                          title={c.estado === "ACTIVO" ? "Desactivar" : "Activar"}
+                        >
+                          <FaPowerOff />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="card-footer bg-white border-top-0 py-3">
+            <small className="text-muted">Mostrando {clubes.length} registros</small>
+        </div>
+      </div>
 
       {/* ================= MODAL CREAR ================= */}
       {modalOpen && (
-        <div className="modal fade show d-block" style={{ background: "#0008" }}>
-          <div className="modal-dialog">
-            <div className="modal-content p-4">
-              <h4 className="fw-bold mb-3">Registrar Club</h4>
-
-              <input
-                className="form-control mb-2"
-                placeholder="Nombre del club"
-                value={form.nombre}
-                onChange={(e) => setField("nombre", e.target.value)}
-              />
-
-              <input
-                className="form-control mb-2"
-                placeholder="Correo de contacto"
-                value={form.correoContacto}
-                onChange={(e) => {
-                  setField("correoContacto", e.target.value);
-                  if (emailSuggestionsField === "correoContacto") {
-                    setEmailSuggestions([]);
-                    setEmailSuggestionsField(null);
-                  }
-                }}
-              />
-              {suggestionsVisible && emailSuggestionsField === "correoContacto" && (
-                  <div className="mb-2">
-                    <small className="text-muted">Sugerencias disponibles:</small>
-                    <div className="d-flex flex-wrap gap-2 mt-2">
-                      {emailSuggestions.map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          className="btn btn-outline-primary btn-sm"
-                          onClick={() => {
-                            setField("correoContacto", s);
-                            setEmailSuggestions([]);
-                            setEmailSuggestionsField(null);
-                          }}
-                        >
-                          {s}
-                        </button>
-                      ))}
+        <>
+          <div className="modal-backdrop fade show"></div>
+          <div className="modal fade show d-block" tabIndex="-1">
+            <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+              <div className="modal-content border-0 shadow">
+                <div className="modal-header bg-primary text-white">
+                  <h5 className="modal-title fw-bold"><FaBuilding className="me-2"/>Nuevo Club</h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={() => setModalOpen(false)}></button>
+                </div>
+                <div className="modal-body p-4">
+                  
+                  {/* SECCIÓN CLUB */}
+                  <h6 className="fw-bold text-primary mb-3">Datos del Club</h6>
+                  <div className="row g-3 mb-4">
+                    <div className="col-12">
+                      <label className="form-label small text-muted fw-bold">Nombre del Club</label>
+                      <input className="form-control" value={form.nombre} onChange={(e) => setField("nombre", e.target.value)} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small text-muted fw-bold">Correo Contacto</label>
+                      <input className="form-control" value={form.correoContacto} onChange={(e) => setField("correoContacto", e.target.value)} />
+                      <EmailSuggestions fieldName="correoContacto" />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small text-muted fw-bold">Teléfono Contacto</label>
+                      <input className="form-control" value={form.telefonoContacto} onChange={(e) => setField("telefonoContacto", e.target.value)} placeholder="Ej: 999888777" />
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label small text-muted fw-bold">Dirección Fiscal</label>
+                      <input className="form-control" value={form.direccionFiscal} onChange={(e) => setField("direccionFiscal", e.target.value)} />
                     </div>
                   </div>
-                )}
 
+                  <hr className="text-muted"/>
 
-
-              <input
-                className="form-control mb-2"
-                placeholder="Teléfono de contacto (Perú: 9xxxxxxxx)"
-                value={form.telefonoContacto}
-                onChange={(e) =>
-                  setField("telefonoContacto", e.target.value.replace(/\D/g, "").slice(0, 9))
-                }
-              />
-
-              <input
-                className="form-control mb-2"
-                placeholder="Dirección fiscal"
-                value={form.direccionFiscal}
-                onChange={(e) => setField("direccionFiscal", e.target.value)}
-              />
-
-              <hr />
-              <h6 className="fw-bold">Datos del propietario</h6>
-
-              <input
-                className="form-control mb-2"
-                placeholder="Nombres"
-                value={form.nombresPropietario}
-                onChange={(e) => setField("nombresPropietario", e.target.value)}
-              />
-
-              <input
-                className="form-control mb-2"
-                placeholder="Apellidos"
-                value={form.apellidosPropietario}
-                onChange={(e) => setField("apellidosPropietario", e.target.value)}
-              />
-
-              <input
-                className="form-control mb-2"
-                placeholder="Correo del propietario"
-                value={form.correoPropietario}
-                onChange={(e) => {
-                  setField("correoPropietario", e.target.value);
-                  if (emailSuggestionsField === "correoPropietario") {
-                    setEmailSuggestions([]);
-                    setEmailSuggestionsField(null);
-                  }
-                }}
-              />
-              {suggestionsVisible && emailSuggestionsField === "correoPropietario" && (
-                <div className="mb-2">
-                  <small className="text-muted">Sugerencias disponibles:</small>
-                  <div className="d-flex flex-wrap gap-2 mt-2">
-                    {emailSuggestions.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        className="btn btn-outline-primary btn-sm"
-                        onClick={() => {
-                          setField("correoPropietario", s);
-                          setEmailSuggestions([]);
-                          setEmailSuggestionsField(null);
-                        }}
-                      >
-                        {s}
-                      </button>
-                    ))}
+                  {/* SECCIÓN PROPIETARIO */}
+                  <h6 className="fw-bold text-success mb-3"><FaUserTie className="me-2"/>Datos del Propietario</h6>
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label small text-muted fw-bold">Nombres</label>
+                      <input className="form-control" value={form.nombresPropietario} onChange={(e) => setField("nombresPropietario", e.target.value)} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small text-muted fw-bold">Apellidos</label>
+                      <input className="form-control" value={form.apellidosPropietario} onChange={(e) => setField("apellidosPropietario", e.target.value)} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small text-muted fw-bold">Correo Propietario</label>
+                      <input className="form-control" value={form.correoPropietario} onChange={(e) => setField("correoPropietario", e.target.value)} />
+                      <EmailSuggestions fieldName="correoPropietario" />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small text-muted fw-bold">Teléfono Propietario</label>
+                      <input className="form-control" value={form.telefonoPropietario} onChange={(e) => setField("telefonoPropietario", e.target.value)} placeholder="Ej: 999888777" />
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label small text-muted fw-bold">Contraseña Inicial</label>
+                      <input type="password" className="form-control" value={form.contrasenaPropietario} onChange={(e) => setField("contrasenaPropietario", e.target.value)} />
+                    </div>
                   </div>
+
                 </div>
-              )}
-
-
-              {/* ✅ CHIPS DE SUGERENCIAS */}
-              {suggestionsVisible && (
-                <div className="mb-2">
-                  <small className="text-muted">Sugerencias disponibles:</small>
-                  <div className="d-flex flex-wrap gap-2 mt-2">
-                    {emailSuggestions.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        className="btn btn-outline-primary btn-sm"
-                        onClick={() => {
-                          setField("correoPropietario", s);
-                          setEmailSuggestions([]);
-                        }}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
+                <div className="modal-footer bg-light">
+                  <button className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancelar</button>
+                  <button className="btn btn-success px-4" onClick={crearClub}>Registrar Club</button>
                 </div>
-              )}
-
-              <input
-                className="form-control mb-2"
-                placeholder="Teléfono del propietario (Perú: 9xxxxxxxx)"
-                value={form.telefonoPropietario}
-                onChange={(e) =>
-                  setField("telefonoPropietario", e.target.value.replace(/\D/g, "").slice(0, 9))
-                }
-              />
-
-              <input
-                className="form-control mb-3"
-                type="password"
-                placeholder="Contraseña"
-                value={form.contrasenaPropietario}
-                onChange={(e) => setField("contrasenaPropietario", e.target.value)}
-              />
-
-              <div className="text-end">
-                <button className="btn btn-secondary me-2" onClick={() => setModalOpen(false)}>
-                  Cancelar
-                </button>
-                <button className="btn btn-success" onClick={crearClub}>
-                  Guardar
-                </button>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* ================= MODAL EDITAR ================= */}
       {editando && (
-        <div className="modal fade show d-block" style={{ background: "#0008" }}>
-          <div className="modal-dialog">
-            <div className="modal-content p-4">
-              <h4 className="fw-bold mb-3">Editar Club</h4>
-
-              <input
-                className="form-control mb-2"
-                value={editando.nombre}
-                onChange={(e) => setEditando({ ...editando, nombre: e.target.value })}
-              />
-
-              <input
-                className="form-control mb-2"
-                value={editando.correoContacto}
-                onChange={(e) => setEditando({ ...editando, correoContacto: e.target.value })}
-              />
-
-              <input
-                className="form-control mb-2"
-                value={editando.telefonoContacto}
-                onChange={(e) =>
-                  setEditando({
-                    ...editando,
-                    telefonoContacto: e.target.value.replace(/\D/g, "").slice(0, 9)
-                  })
-                }
-              />
-
-              <select
-                className="form-select mb-3"
-                value={editando.estado}
-                onChange={(e) => setEditando({ ...editando, estado: e.target.value })}
-              >
-                <option value="ACTIVO">ACTIVO</option>
-                <option value="INACTIVO">INACTIVO</option>
-              </select>
-
-              <div className="text-end">
-                <button className="btn btn-secondary me-2" onClick={() => setEditando(null)}>
-                  Cancelar
-                </button>
-                <button className="btn btn-primary" onClick={guardarClub}>
-                  Guardar
-                </button>
+        <>
+          <div className="modal-backdrop fade show"></div>
+          <div className="modal fade show d-block" tabIndex="-1">
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content border-0 shadow">
+                <div className="modal-header bg-primary text-white">
+                  <h5 className="modal-title fw-bold"><FaEdit className="me-2"/>Editar Club</h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={() => setEditando(null)}></button>
+                </div>
+                <div className="modal-body p-4">
+                  <div className="mb-3">
+                    <label className="form-label fw-bold small text-muted">Nombre del Club</label>
+                    <input className="form-control" value={editando.nombre} onChange={(e) => setEditando({ ...editando, nombre: e.target.value })} />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label fw-bold small text-muted">Correo Contacto</label>
+                    <input className="form-control" value={editando.correoContacto} onChange={(e) => setEditando({ ...editando, correoContacto: e.target.value })} />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label fw-bold small text-muted">Teléfono</label>
+                    <input className="form-control" value={editando.telefonoContacto} onChange={(e) => setEditando({ ...editando, telefonoContacto: e.target.value })} />
+                  </div>
+                </div>
+                <div className="modal-footer bg-light">
+                  <button className="btn btn-secondary" onClick={() => setEditando(null)}>Cancelar</button>
+                  <button className="btn btn-primary px-4" onClick={guardarEdicion}>Guardar Cambios</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

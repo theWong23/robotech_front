@@ -1,9 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Swal from "sweetalert2";
-import api from "../../services/axiosConfig"; 
+import { FaPlus, FaSearch, FaEdit, FaTrash, FaCheck, FaTimes, FaUserTie } from "react-icons/fa";
+import api from "../../services/axiosConfig"; // Asegúrate de que apunte a tu config de axios
 
 export default function AdminJueces() {
+  // =========================
+  // ESTADOS
+  // =========================
   const [jueces, setJueces] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Modal & Formulario
+  const [modal, setModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  
   const [form, setForm] = useState({
     correo: "",
     telefono: "",
@@ -11,11 +22,8 @@ export default function AdminJueces() {
     licencia: ""
   });
 
-  const [modal, setModal] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-
   // =========================
-  // 1. OBTENER ID DEL ADMIN
+  // UTILS
   // =========================
   const getAdminId = () => {
     try {
@@ -24,258 +32,321 @@ export default function AdminJueces() {
       const usuario = JSON.parse(usuarioStr);
       return usuario.idUsuario || usuario.entidad?.idUsuario || usuario.id;
     } catch (e) {
-      console.error("Error leyendo usuario del storage", e);
       return null;
     }
   };
 
   const adminId = getAdminId();
 
+  // =========================
+  // CARGA DE DATOS
+  // =========================
+  const cargar = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/admin/jueces");
+      setJueces(res.data || []);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "No se pudo cargar la lista de jueces", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     cargar();
   }, []);
 
-  const cargar = async () => {
-    try {
-      const res = await api.get("/admin/jueces");
-      setJueces(res.data);
-    } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "No se pudo cargar la lista de jueces", "error");
-    }
-  };
+  // =========================
+  // LÓGICA DE FILTRADO (VISUAL)
+  // =========================
+  const juecesFiltrados = useMemo(() => {
+    return jueces.filter((j) => {
+      const termino = searchTerm.toLowerCase();
+      const correo = j.usuario?.correo?.toLowerCase() || "";
+      const licencia = j.licencia?.toLowerCase() || "";
+      return correo.includes(termino) || licencia.includes(termino);
+    });
+  }, [jueces, searchTerm]);
 
+  // =========================
+  // MANEJO DEL FORMULARIO
+  // =========================
   const abrirCrear = () => {
     setForm({ correo: "", telefono: "", contrasena: "", licencia: "" });
     setEditingId(null);
     setModal(true);
   };
 
-  const validarCampos = () => {
-    const correoRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const telRegex = /^[0-9]{9}$/;
-
-    if (!correoRegex.test(form.correo)) {
-      Swal.fire("Correo inválido", "Ingresa un correo válido", "warning");
-      return false;
-    }
-    if (!telRegex.test(form.telefono)) {
-      Swal.fire("Teléfono inválido", "Debe tener 9 dígitos", "warning");
-      return false;
-    }
-    if (!editingId && form.contrasena.length < 6) {
-      Swal.fire("Contraseña débil", "Debe tener mínimo 6 caracteres", "warning");
-      return false;
-    }
-    return true;
+  const abrirEditar = (j) => {
+    setEditingId(j.idJuez);
+    setForm({
+      correo: j.usuario?.correo || "",
+      telefono: j.usuario?.telefono || "",
+      contrasena: "", // Se deja vacía para no sobrescribir si no se toca
+      licencia: j.licencia
+    });
+    setModal(true);
   };
 
+  // =========================
+  // GUARDAR (LÓGICA DELEGADA AL BACKEND)
+  // =========================
   const guardar = async () => {
-    if (!validarCampos()) return;
+    // 1. Validación mínima de UI (campos obligatorios)
+    if (!form.correo || !form.licencia) {
+      return Swal.fire("Atención", "Correo y Licencia son obligatorios", "warning");
+    }
+    
     if (!adminId) {
-      Swal.fire("Error de Sesión", "No se identifica al administrador. Relogueate.", "error");
-      return;
+      return Swal.fire("Error de Sesión", "Relogueate como administrador.", "error");
     }
 
     try {
+      // 2. Preparar datos
+      // El backend validará si el correo es válido, si la licencia es única, etc.
       if (!editingId) {
+        // Crear
         await api.post("/admin/jueces", { ...form, creadoPor: adminId });
-        Swal.fire("✔ Juez creado correctamente", "", "success");
+        Swal.fire({ icon: 'success', title: 'Creado', text: 'Juez registrado correctamente', timer: 1500 });
       } else {
-        await api.put(`/admin/jueces/${editingId}`, form);
-        Swal.fire("✔ Datos actualizados", "", "success");
+        // Editar
+        const payload = { ...form };
+        // Si la contraseña está vacía, la quitamos para que el backend sepa que no debe cambiarla
+        if (!payload.contrasena) delete payload.contrasena; 
+        
+        await api.put(`/admin/jueces/${editingId}`, payload);
+        Swal.fire({ icon: 'success', title: 'Actualizado', text: 'Datos modificados correctamente', timer: 1500 });
       }
+      
       setModal(false);
-      cargar();
+      cargar(); // Recargar lista
+
     } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "No se pudo guardar la información", "error");
+      // 3. Manejo de Errores del Backend
+      const msg = err.response?.data?.mensaje || "No se pudo guardar la información";
+      Swal.fire("Error", msg, "error");
     }
   };
 
+  // =========================
+  // ACCIONES (ELIMINAR / ESTADO)
+  // =========================
   const eliminar = async (idJuez) => {
-    const confirm = await Swal.fire({
-      title: "¿Eliminar juez?",
-      text: "Esta acción es irreversible",
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "El backend determinará si se puede eliminar o desactivar.",
       icon: "warning",
-      showCancelButton: true
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar"
     });
 
-    if (!confirm.isConfirmed) return;
-
-    try {
-      await api.delete(`/admin/jueces/${idJuez}`);
-      Swal.fire("Juez eliminado", "", "success");
-      cargar();
-    } catch (err) {
-      Swal.fire("Error", "No se pudo eliminar al juez", "error");
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/admin/jueces/${idJuez}`);
+        Swal.fire("Procesado", "Acción realizada correctamente.", "success");
+        cargar();
+      } catch (err) {
+        const msg = err.response?.data?.mensaje || "No se pudo eliminar";
+        Swal.fire("Error", msg, "error");
+      }
     }
   };
 
-  // =========================
-  // APROBAR (CORREGIDO)
-  // =========================
-  const aprobar = async (idJuez) => {
-    if (!adminId) {
-      Swal.fire("Error", "Sesión inválida", "error");
-      return;
-    }
-
-    const confirm = await Swal.fire({
-      title: "¿Aprobar juez?",
-      icon: "question",
-      showCancelButton: true
-    });
-
-    if (!confirm.isConfirmed) return;
-
+  const cambiarEstado = async (idJuez, accion) => {
+    if (!adminId) return Swal.fire("Error", "Sesión inválida", "error");
+    
     try {
-      await api.put(`/admin/jueces/${idJuez}/aprobar`, {}, {
+      await api.put(`/admin/jueces/${idJuez}/${accion}`, {}, {
         headers: { "admin-id": adminId }
       });
-      Swal.fire("✔ Juez aprobado", "", "success");
+      
+      const msg = accion === "aprobar" ? "Juez aprobado con éxito" : "Juez rechazado";
+      Swal.fire("Correcto", msg, "success");
       cargar();
     } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "No se pudo aprobar al juez", "error");
+      const msg = err.response?.data?.mensaje || `No se pudo ${accion} al juez`;
+      Swal.fire("Error", msg, "error");
     }
   };
 
+  const formatFecha = (f) => f ? new Date(f).toLocaleDateString() : "—";
+
   // =========================
-  // RECHAZAR (CORREGIDO)
+  // RENDER (VISUALMENTE IDÉNTICO)
   // =========================
-  const rechazar = async (idJuez) => {
-    if (!adminId) return;
-
-    const confirm = await Swal.fire({
-      title: "¿Rechazar juez?",
-      icon: "warning",
-      showCancelButton: true
-    });
-
-    if (!confirm.isConfirmed) return;
-
-    try {
-      await api.put(`/admin/jueces/${idJuez}/rechazar`, {}, {
-        headers: { "admin-id": adminId }
-      });
-      Swal.fire("✔ Juez rechazado", "", "success");
-      cargar();
-    } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "No se pudo rechazar al juez", "error");
-    }
-  };
-
-  const formatFecha = (f) => f ? new Date(f).toLocaleString() : "—";
-
   return (
-    <div className="container mt-4">
-      <h2 className="fw-bold mb-3">Gestión de Jueces</h2>
-      <button className="btn btn-primary my-3" onClick={abrirCrear}>
-        ➕ Crear Juez
-      </button>
-
-      <div className="table-responsive">
-        <table className="table table-bordered shadow-sm">
-          <thead className="table-dark">
-            <tr>
-              <th>Correo</th>
-              <th>Teléfono</th>
-              <th>Licencia</th>
-              <th>Estado</th>
-              <th>Creado por</th>
-              <th>Creado en</th>
-              <th>Validado por</th>
-              <th>Validado en</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {jueces.length === 0 ? (
-              <tr>
-                <td colSpan="9" className="text-center text-muted py-4">
-                  No hay jueces registrados
-                </td>
-              </tr>
-            ) : jueces.map(j => (
-              <tr key={j.idJuez}>
-                <td>{j.usuario?.correo}</td>
-                <td>{j.usuario?.telefono}</td>
-                <td>{j.licencia}</td>
-                <td>
-                  <span className={`badge ${
-                    j.estadoValidacion === "APROBADO" ? "bg-success" :
-                    j.estadoValidacion === "RECHAZADO" ? "bg-danger" : "bg-warning text-dark"
-                  }`}>
-                    {j.estadoValidacion}
-                  </span>
-                </td>
-                <td>{j.creadoPor ?? "—"}</td>
-                <td>{formatFecha(j.creadoEn)}</td>
-                <td>{j.validadoPor ?? "—"}</td>
-                <td>{formatFecha(j.validadoEn)}</td>
-                <td>
-                  <div className="d-flex gap-2">
-                    {j.estadoValidacion === "PENDIENTE" && (
-                      <>
-                        <button className="btn btn-success btn-sm" onClick={() => aprobar(j.idJuez)}>
-                          <i className="bi bi-check-lg"></i>
-                        </button>
-                        <button className="btn btn-danger btn-sm" onClick={() => rechazar(j.idJuez)}>
-                          <i className="bi bi-x-lg"></i>
-                        </button>
-                      </>
-                    )}
-                    <button className="btn btn-warning btn-sm" onClick={() => {
-                      setEditingId(j.idJuez);
-                      setForm({
-                        correo: j.usuario?.correo || "",
-                        telefono: j.usuario?.telefono || "",
-                        contrasena: "",
-                        licencia: j.licencia
-                      });
-                      setModal(true);
-                    }}>✏️</button>
-                    <button className="btn btn-outline-danger btn-sm" onClick={() => eliminar(j.idJuez)}>🗑️</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="container-fluid px-4 mt-4">
+      {/* HEADER */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 className="fw-bold text-dark mb-0"><FaUserTie className="me-2"/>Gestión de Jueces</h2>
+          <p className="text-muted">Administra los accesos y validaciones.</p>
+        </div>
+        <button className="btn btn-primary shadow-sm" onClick={abrirCrear}>
+          <FaPlus className="me-2" /> Nuevo Juez
+        </button>
       </div>
 
+      {/* SEARCH BAR */}
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body">
+          <div className="input-group">
+            <span className="input-group-text bg-light border-0"><FaSearch className="text-muted"/></span>
+            <input 
+              type="text" 
+              className="form-control border-0 bg-light" 
+              placeholder="Buscar por correo o licencia..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* TABLE */}
+      <div className="card shadow-sm border-0">
+        <div className="card-body p-0">
+          <div className="table-responsive">
+            <table className="table table-hover align-middle mb-0">
+              <thead className="bg-light">
+                <tr>
+                  <th className="ps-4">Juez</th>
+                  <th>Contacto</th>
+                  <th>Licencia</th>
+                  <th>Estado</th>
+                  <th>Registro</th>
+                  <th className="text-end pe-4">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan="6" className="text-center py-5"><div className="spinner-border text-primary"/></td></tr>
+                ) : juecesFiltrados.length === 0 ? (
+                  <tr><td colSpan="6" className="text-center text-muted py-5">No se encontraron resultados</td></tr>
+                ) : (
+                  juecesFiltrados.map(j => (
+                    <tr key={j.idJuez}>
+                      <td className="ps-4">
+                        <div className="fw-bold">{j.usuario?.correo}</div>
+                        <small className="text-muted">ID: {j.idJuez.substring(0,8)}...</small>
+                      </td>
+                      <td>{j.usuario?.telefono || "—"}</td>
+                      <td><span className="badge bg-secondary">{j.licencia}</span></td>
+                      <td>
+                        <span className={`badge rounded-pill ${
+                          j.estadoValidacion === "APROBADO" ? "bg-success" :
+                          j.estadoValidacion === "RECHAZADO" ? "bg-danger" : "bg-warning text-dark"
+                        }`}>
+                          {j.estadoValidacion}
+                        </span>
+                      </td>
+                      <td>
+                        <small className="text-muted">
+                          Creado: {formatFecha(j.creadoEn)} <br/>
+                          {j.validadoEn && <span>Validado: {formatFecha(j.validadoEn)}</span>}
+                        </small>
+                      </td>
+                      <td className="text-end pe-4">
+                        <div className="d-flex justify-content-end gap-2">
+                          {j.estadoValidacion === "PENDIENTE" && (
+                            <>
+                              <button className="btn btn-outline-success btn-sm" title="Aprobar" onClick={() => cambiarEstado(j.idJuez, 'aprobar')}>
+                                <FaCheck />
+                              </button>
+                              <button className="btn btn-outline-danger btn-sm" title="Rechazar" onClick={() => cambiarEstado(j.idJuez, 'rechazar')}>
+                                <FaTimes />
+                              </button>
+                            </>
+                          )}
+                          <button className="btn btn-outline-primary btn-sm" title="Editar" onClick={() => abrirEditar(j)}>
+                            <FaEdit />
+                          </button>
+                          <button className="btn btn-outline-danger btn-sm" title="Eliminar" onClick={() => eliminar(j.idJuez)}>
+                            <FaTrash />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* MODAL */}
       {modal && (
-        <div className="modal fade show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content p-4 shadow">
-              <h4 className="fw-bold mb-3">{editingId ? "Editar Juez" : "Crear Juez"}</h4>
-              <div className="mb-2">
-                <label className="form-label">Correo Electrónico</label>
-                <input className="form-control" value={form.correo} onChange={e => setForm({ ...form, correo: e.target.value })} />
-              </div>
-              <div className="mb-2">
-                <label className="form-label">Teléfono</label>
-                <input className="form-control" value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} maxLength={9} />
-              </div>
-              {!editingId && (
-                <div className="mb-2">
-                  <label className="form-label">Contraseña</label>
-                  <input type="password" className="form-control" value={form.contrasena} onChange={e => setForm({ ...form, contrasena: e.target.value })} />
+        <>
+          <div className="modal-backdrop fade show"></div>
+          <div className="modal fade show d-block" tabIndex="-1">
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content border-0 shadow">
+                <div className="modal-header bg-primary text-white">
+                  <h5 className="modal-title fw-bold">
+                    {editingId ? <><FaEdit className="me-2"/>Editar Juez</> : <><FaPlus className="me-2"/>Crear Juez</>}
+                  </h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={() => setModal(false)}></button>
                 </div>
-              )}
-              <div className="mb-3">
-                <label className="form-label">Licencia</label>
-                <input className="form-control" value={form.licencia} onChange={e => setForm({ ...form, licencia: e.target.value })} />
-              </div>
-              <div className="d-flex justify-content-end gap-2 mt-4">
-                <button className="btn btn-secondary" onClick={() => setModal(false)}>Cancelar</button>
-                <button className="btn btn-primary" onClick={guardar}>{editingId ? "Actualizar" : "Guardar"}</button>
+                <div className="modal-body p-4">
+                  <div className="mb-3">
+                    <label className="form-label fw-bold text-muted small">CORREO ELECTRÓNICO</label>
+                    <input 
+                      type="email" 
+                      className="form-control" 
+                      value={form.correo} 
+                      onChange={e => setForm({ ...form, correo: e.target.value })}
+                      placeholder="ejemplo@correo.com"
+                    />
+                  </div>
+                  <div className="row">
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label fw-bold text-muted small">TELÉFONO</label>
+                      <input 
+                        type="tel" 
+                        className="form-control" 
+                        value={form.telefono} 
+                        onChange={e => setForm({ ...form, telefono: e.target.value })} 
+                        maxLength={15} // Dejamos margen por si el formato cambia
+                        placeholder="999999999"
+                      />
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label fw-bold text-muted small">LICENCIA</label>
+                      <input 
+                        className="form-control" 
+                        value={form.licencia} 
+                        onChange={e => setForm({ ...form, licencia: e.target.value })} 
+                        placeholder="Código Licencia"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mb-3">
+                    <label className="form-label fw-bold text-muted small">
+                      CONTRASEÑA {editingId && <span className="fw-normal text-muted">(Dejar en blanco para mantener actual)</span>}
+                    </label>
+                    <input 
+                      type="password" 
+                      className="form-control" 
+                      value={form.contrasena} 
+                      onChange={e => setForm({ ...form, contrasena: e.target.value })}
+                      placeholder={editingId ? "********" : "Mínimo 6 caracteres"}
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer bg-light">
+                  <button className="btn btn-link text-secondary text-decoration-none" onClick={() => setModal(false)}>Cancelar</button>
+                  <button className="btn btn-primary px-4" onClick={guardar}>Guardar Datos</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

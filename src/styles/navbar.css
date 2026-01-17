@@ -1,0 +1,78 @@
+:root {
+  --primary-color: #00b3b3;
+  --primary-dark: #008f8f;
+  --text-light: rgba(255, 255, 255, 0.85);
+  --text-white: #ffffff;
+}
+
+/* --- Contenedor Principal --- */
+.robotech-navbar {
+  background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  box-shadow: 0 4px 15px rgba(0, 179, 179, 0.3); /* Sombra suave turquesa */
+  padding: 0.8rem 1rem;
+}
+
+/* --- Logo --- */
+.navbar-brand img {
+  transition: transform 0.3s ease;
+}
+
+.navbar-brand:hover img {
+  transform: rotate(-5deg) scale(1.1); /* Pequeño efecto al pasar el mouse por el logo */
+}
+
+/* --- Enlaces del Menú --- */
+.navbar-nav .nav-link {
+  color: var(--text-light) !important;
+  font-weight: 500;
+  font-size: 1rem;
+  margin: 0 5px;
+  position: relative; /* Necesario para la animación del subrayado */
+  transition: color 0.3s ease;
+}
+
+/* Efecto HOVER (Pasar el mouse) */
+.navbar-nav .nav-link:hover {
+  color: var(--text-white) !important;
+  transform: translateY(-2px); /* Se eleva ligeramente */
+}
+
+/* Efecto ACTIVE (Página actual) */
+.navbar-nav .nav-link.active {
+  color: var(--text-white) !important;
+  font-weight: 700;
+}
+
+/* --- Animación de Subrayado Mágico --- */
+/* Crea una linea invisible debajo de cada link */
+.navbar-nav .nav-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 3px;
+  bottom: 0;
+  left: 50%;
+  background-color: #fff;
+  transition: all 0.3s ease-in-out;
+  transform: translateX(-50%); /* Centra la animación */
+  border-radius: 10px;
+}
+
+/* Cuando es HOVER o ACTIVE, la linea crece al 100% */
+.navbar-nav .nav-link:hover::after,
+.navbar-nav .nav-link.active::after {
+  width: 80%; /* No ocupa todo el ancho, se ve más estético */
+}
+
+/* --- Botones (Login/Registro) --- */
+.btn-custom-outline {
+  border: 2px solid rgba(255,255,255,0.3);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-custom-outline:hover {
+  background-color: white;
+  color: var(--primary-dark);
+  border-color: white;
+}

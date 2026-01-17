@@ -1,0 +1,56 @@
+/* Color de fondo suave para todo el panel (evita el blanco puro que cansa la vista) */
+.dashboard-container {
+  background-color: #f4f6f9; 
+}
+
+/* Ajustes para el wrapper del Sidebar */
+.sidebar-wrapper {
+  min-width: 250px;       /* Ancho mínimo para que no se aplaste */
+  max-width: 280px;       /* Ancho máximo */
+  background-color: #ffffff;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.03); /* Sombra muy sutil a la derecha */
+  z-index: 10;
+}
+
+/* Área de contenido */
+.content-area {
+  overflow-y: auto; /* Permite scroll solo en el contenido si es muy largo */
+  max-height: calc(100vh - 76px); /* Altura pantalla menos altura aprox del Navbar */
+}
+
+/* Animación suave al cambiar de sección */
+.fade-in-content {
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Responsividad (Móvil) --- */
+@media (max-width: 768px) {
+  .dashboard-container {
+    flex-direction: column; /* En móvil, el sidebar pasa arriba o se oculta */
+  }
+  
+  .sidebar-wrapper {
+    width: 100%;
+    max-width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .content-area {
+    max-height: none; /* En móvil dejamos que el scroll sea natural */
+  }
+}
+
+.hover-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-card:hover {
+  transform: translateY(-5px); /* Sube un poquito */
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; /* Aumenta la sombra */
+}

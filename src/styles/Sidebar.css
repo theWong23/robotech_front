@@ -1,16 +1,63 @@
+/* Sidebar.css - Versión "Turquesa Soft" */
+
 .sidebar {
-  width: 250px;
-  min-height: 100vh;
-  background-color: #111827;
+  /* CAMBIO: Un tono menta muy pálido, casi blanco pero con tintes de tu marca */
+  background-color: #f0fcfc; 
+  border-right: 1px solid rgba(0, 179, 179, 0.15); /* Borde sutil para separar */
+  height: 100%;
 }
 
-.sidebar a {
-  color: white;
+/* --- Títulos del Sidebar --- */
+.sidebar-header h4 {
+  /* Usamos el turquesa oscuro para el título, para que contraste */
+  color: #008f8f !important; 
+}
+
+.sidebar-header small {
+  color: #7f8c8d; /* Gris suave */
+}
+
+/* --- Estilo Base de los Links (Normal) --- */
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  /* Texto gris oscuro con un toque azulado, muy legible */
+  color: #546e7a; 
   text-decoration: none;
-  display: block;
-  padding: 10px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  margin-bottom: 5px;
 }
 
-.sidebar a:hover {
-  background-color: #1f2937;
+/* --- Estado HOVER (Pasar el mouse) --- */
+.sidebar-link:hover {
+  /* Fondo turquesa muy bajito */
+  background-color: rgba(0, 179, 179, 0.1); 
+  color: #00b3b3; /* El texto se pone de tu color principal */
+  transform: translateX(5px);
+}
+
+/* --- Estado ACTIVE (Seleccionado) --- */
+.sidebar-link.active {
+  /* AQUÍ ESTÁ LA MAGIA: El botón activo toma el color FUERTE */
+  background: linear-gradient(45deg, #00b3b3, #008f8f); 
+  color: #ffffff; /* Texto blanco para máximo contraste */
+  box-shadow: 0 4px 10px rgba(0, 179, 179, 0.25); /* Sombra suave turquesa */
+}
+
+/* Iconos */
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  width: 24px;
+  color: #00b3b3; /* Los iconos inactivos son turquesas por defecto */
+}
+
+/* El icono activo se vuelve blanco */
+.sidebar-link.active .icon-wrapper {
+  color: #ffffff;
 }

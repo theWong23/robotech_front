@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; // 1. IMPORTAR useNavigate
 import axios from "axios";
 import Swal from "sweetalert2";
 import "../../styles/CompetidorDashboard.css";
 
 export default function CompetidorDashboard() {
+  const navigate = useNavigate(); // 2. INICIALIZAR EL HOOK
 
   // =============================
   // ESTADOS
@@ -15,17 +17,21 @@ export default function CompetidorDashboard() {
   const [form, setForm] = useState({
     nombres: "",
     apellidos: "",
-    telefono: ""
+    telefono: "",
+    dni: "",
+    correo: ""
   });
 
   const [errores, setErrores] = useState({
     nombres: "",
     apellidos: "",
-    telefono: ""
+    telefono: "",
+    dni: "",
+    correo: ""
   });
 
   // =============================
-  // AUTH (LECTURA SEGURA)
+  // AUTH
   // =============================
   const storedUser = localStorage.getItem("usuario");
   const entidad = storedUser ? JSON.parse(storedUser) : null;
@@ -58,7 +64,9 @@ export default function CompetidorDashboard() {
       setForm({
         nombres: res.data.nombres,
         apellidos: res.data.apellidos,
-        telefono: res.data.telefono || ""
+        telefono: res.data.telefono || "",
+        dni: res.data.dni || "",
+        correo: res.data.correo || ""
       });
 
     } catch (err) {
@@ -72,29 +80,10 @@ export default function CompetidorDashboard() {
   // =============================
   const validarNombreHumano = (texto) => {
     if (!texto) return "Campo obligatorio";
-
     const limpio = texto.trim();
-
-    if (!/^[A-Za-zÁÉÍÓÚáéíóúñÑ ]+$/.test(limpio)) {
-      return "Solo letras y espacios";
-    }
-
+    if (!/^[A-Za-zÁÉÍÓÚáéíóúñÑ ]+$/.test(limpio)) return "Solo letras y espacios";
     const letras = limpio.replace(/\s+/g, "");
-    if (letras.length < 5) {
-      return "Debe tener al menos 5 letras";
-    }
-
-    const palabras = limpio.split(" ");
-    for (let p of palabras) {
-      if (p.length > 0 && p.length < 3) {
-        return "Cada palabra mínimo 3 letras";
-      }
-    }
-
-    if (!/[AEIOUÁÉÍÓÚaeiouáéíóú]/.test(limpio)) {
-      return "Debe contener una vocal";
-    }
-
+    if (letras.length < 3) return "Mínimo 3 letras";
     return "";
   };
 
@@ -103,11 +92,25 @@ export default function CompetidorDashboard() {
     let value = raw;
     let error = "";
 
+    // VALIDACIÓN TELÉFONO
     if (name === "telefono") {
       value = raw.replace(/\D/g, "").slice(0, 9);
       if (value.length !== 9) error = "Debe tener 9 dígitos";
     }
 
+    // VALIDACIÓN DNI
+    if (name === "dni") {
+      value = raw.replace(/\D/g, "").slice(0, 8);
+      if (value.length !== 8) error = "Debe tener 8 dígitos";
+    }
+
+    // VALIDACIÓN CORREO
+    if (name === "correo") {
+      const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!regexCorreo.test(value)) error = "Correo inválido";
+    }
+
+    // VALIDACIÓN NOMBRES
     if (name === "nombres" || name === "apellidos") {
       error = validarNombreHumano(value);
     }
@@ -119,40 +122,58 @@ export default function CompetidorDashboard() {
   const claseInput = (campo) => {
     if (!editando) return "form-control";
     if (!form[campo]) return "form-control";
-    return errores[campo]
-      ? "form-control is-invalid"
-      : "form-control is-valid";
+    return errores[campo] ? "form-control is-invalid" : "form-control is-valid";
   };
 
   // =============================
-  // GUARDAR CAMBIOS
+  // GUARDAR CAMBIOS (AQUÍ ESTÁ LA LÓGICA DE SEGURIDAD)
   // =============================
   const guardarCambios = async () => {
     const errNom = validarNombreHumano(form.nombres);
     const errApe = validarNombreHumano(form.apellidos);
+    const dniValido = /^[0-9]{8}$/.test(form.dni);
+    const telValido = /^[0-9]{9}$/.test(form.telefono);
+    const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo);
 
-    if (errNom || errApe || !/^[0-9]{9}$/.test(form.telefono)) {
-      Swal.fire("Error", "Datos inválidos", "warning");
+    if (errNom || errApe || !dniValido || !telValido || !correoValido) {
+      Swal.fire("Datos inválidos", "Revisa los campos en rojo", "warning");
       return;
     }
 
     try {
       await axios.put(
         `http://localhost:8080/api/competidores/${idCompetidor}`,
-        form,
+        form, 
         {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
 
-      Swal.fire("Perfil actualizado", "", "success");
-      setEditando(false);
-      cargarPerfil();
+      // 3. VERIFICAMOS SI CAMBIÓ EL CORREO
+      if (form.correo !== competidor.correo) {
+        
+        await Swal.fire({
+            title: "Correo actualizado",
+            text: "Has cambiado tu correo. Por seguridad, debes iniciar sesión nuevamente.",
+            icon: "info",
+            confirmButtonText: "Ir al Login",
+            allowOutsideClick: false
+        });
 
-    } catch {
-      Swal.fire("Error", "No se pudo actualizar", "error");
+        // Borramos sesión y redirigimos
+        localStorage.clear();
+        navigate("/login");
+
+      } else {
+        // Si NO cambió el correo, todo sigue igual
+        Swal.fire("Perfil actualizado", "", "success");
+        setEditando(false);
+        cargarPerfil();
+      }
+
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "No se pudo actualizar (quizás el correo ya existe)", "error");
     }
   };
 
@@ -160,9 +181,11 @@ export default function CompetidorDashboard() {
     setForm({
       nombres: competidor.nombres,
       apellidos: competidor.apellidos,
-      telefono: competidor.telefono || ""
+      telefono: competidor.telefono || "",
+      dni: competidor.dni || "",
+      correo: competidor.correo || ""
     });
-    setErrores({ nombres: "", apellidos: "", telefono: "" });
+    setErrores({ nombres: "", apellidos: "", telefono: "", dni: "", correo: "" });
     setEditando(false);
   };
 
@@ -178,7 +201,6 @@ export default function CompetidorDashboard() {
 
     try {
       setSubiendoFoto(true);
-
       await axios.post(
         `http://localhost:8080/api/competidores/${idCompetidor}/foto`,
         formData,
@@ -189,10 +211,8 @@ export default function CompetidorDashboard() {
           }
         }
       );
-
       Swal.fire("Foto actualizada", "", "success");
       cargarPerfil();
-
     } catch {
       Swal.fire("Error", "No se pudo subir la foto", "error");
     } finally {
@@ -203,12 +223,8 @@ export default function CompetidorDashboard() {
   if (!competidor) return <p>Cargando perfil...</p>;
 
   const formularioValido =
-    !errores.nombres &&
-    !errores.apellidos &&
-    !errores.telefono &&
-    form.nombres &&
-    form.apellidos &&
-    form.telefono;
+    !errores.nombres && !errores.apellidos && !errores.telefono && !errores.dni && !errores.correo &&
+    form.nombres && form.apellidos && form.telefono && form.dni && form.correo;
 
   // =============================
   // RENDER
@@ -228,6 +244,7 @@ export default function CompetidorDashboard() {
             className="perfil-avatar"
             onClick={() => document.getElementById("fotoInput").click()}
             title="Cambiar foto"
+            alt="Avatar"
           />
           {subiendoFoto && <span className="subiendo">Subiendo...</span>}
         </div>
@@ -242,11 +259,7 @@ export default function CompetidorDashboard() {
 
         <div className="perfil-info">
           <h2>{competidor.nombres} {competidor.apellidos}</h2>
-
-          <p className="perfil-club">
-            Club: {competidor.clubNombre}
-          </p>
-
+          
           <span className={`perfil-estado ${
             competidor.estadoValidacion === "APROBADO"
               ? "estado-aprobado"
@@ -276,9 +289,50 @@ export default function CompetidorDashboard() {
       {/* DATOS */}
       <div className="perfil-datos">
 
+        {/* CLUB */}
+        <div className="perfil-dato">
+          <label>Club</label>
+          <span className="fw-bold text-primary">
+             {competidor.clubNombre || "Sin club asignado"}
+          </span>
+        </div>
+
+        {/* CORREO (Editable) */}
         <div className="perfil-dato">
           <label>Correo</label>
-          <span>{competidor.correo}</span>
+          {editando ? (
+            <>
+              <input
+                className={claseInput("correo")}
+                name="correo"
+                value={form.correo}
+                onChange={cambiar}
+                placeholder="ejemplo@correo.com"
+              />
+              {errores.correo && <small className="text-danger">{errores.correo}</small>}
+            </>
+          ) : (
+            <span className="text-muted">{competidor.correo}</span>
+          )}
+        </div>
+
+        {/* DNI */}
+        <div className="perfil-dato">
+          <label>DNI</label>
+          {editando ? (
+            <>
+              <input
+                className={claseInput("dni")}
+                name="dni"
+                value={form.dni}
+                onChange={cambiar}
+                placeholder="8 dígitos"
+              />
+              {errores.dni && <small className="text-danger">{errores.dni}</small>}
+            </>
+          ) : (
+            <span>{competidor.dni || "No registrado"}</span>
+          )}
         </div>
 
         {/* NOMBRES */}
@@ -292,9 +346,7 @@ export default function CompetidorDashboard() {
                 value={form.nombres}
                 onChange={cambiar}
               />
-              {errores.nombres && (
-                <small className="text-danger">{errores.nombres}</small>
-              )}
+              {errores.nombres && <small className="text-danger">{errores.nombres}</small>}
             </>
           ) : (
             <span>{competidor.nombres}</span>
@@ -312,9 +364,7 @@ export default function CompetidorDashboard() {
                 value={form.apellidos}
                 onChange={cambiar}
               />
-              {errores.apellidos && (
-                <small className="text-danger">{errores.apellidos}</small>
-              )}
+              {errores.apellidos && <small className="text-danger">{errores.apellidos}</small>}
             </>
           ) : (
             <span>{competidor.apellidos}</span>
@@ -332,9 +382,7 @@ export default function CompetidorDashboard() {
                 value={form.telefono}
                 onChange={cambiar}
               />
-              {errores.telefono && (
-                <small className="text-danger">{errores.telefono}</small>
-              )}
+              {errores.telefono && <small className="text-danger">{errores.telefono}</small>}
             </>
           ) : (
             <span>{competidor.telefono}</span>
