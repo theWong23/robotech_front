@@ -24,7 +24,7 @@ export default function AdminCategoriasTorneo() {
     categoria: "",
     descripcion: "",
     modalidad: "INDIVIDUAL",
-    maxParticipantes: 1,
+    maxParticipantes: 2,
     maxEquipos: null,
     maxIntegrantesEquipo: null
   });
@@ -64,7 +64,7 @@ export default function AdminCategoriasTorneo() {
       categoria: "",
       descripcion: "",
       modalidad: "INDIVIDUAL",
-      maxParticipantes: 1,
+      maxParticipantes: 2,
       maxEquipos: null,
       maxIntegrantesEquipo: null
     });
@@ -293,7 +293,7 @@ export default function AdminCategoriasTorneo() {
                   <label className="mt-2 fw-bold">Cupos</label>
                   <input
                     type="number"
-                    min="1"
+                    min="2"
                     className="form-control"
                     value={form.maxParticipantes}
                     onChange={e =>

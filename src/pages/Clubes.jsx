@@ -2,142 +2,236 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import "../styles/clubes.css";
 import { useState, useEffect } from "react";
-import api from "../services/axiosConfig"; // Asegúrate de que la ruta sea correcta
+import api from "../services/axiosConfig";
+import { 
+  FaShieldAlt, 
+  FaUsers, 
+  FaSearch, 
+  FaTimes, 
+  FaIdCard, 
+  FaBuilding, 
+  FaMapMarkerAlt, 
+  FaEnvelope 
+} from "react-icons/fa";
 
 export default function Clubes() {
   const [clubes, setClubes] = useState([]);
   const [busqueda, setBusqueda] = useState("");
+  const [showModal, setShowModal] = useState(false);
   const [clubSeleccionado, setClubSeleccionado] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Cargar clubes desde el backend
   useEffect(() => {
     setLoading(true);
-    api.get("public/clubes") // Ruta relativa, axiosConfig ya tiene el /api
+    api.get("public/clubes")
       .then((res) => {
         setClubes(res.data);
       })
-      .catch((err) => {
-        console.error("Error al cargar clubes:", err);
-      })
+      .catch((err) => console.error("Error al cargar clubes:", err))
       .finally(() => setLoading(false));
   }, []);
 
-  // 2. Filtrado por nombre
+  const getInitials = (name) => {
+    return name ? name.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2) : "CL";
+  };
+
+  const getColorFromName = (name) => {
+    const colors = ["#0d6efd", "#6610f2", "#6f42c1", "#d63384", "#dc3545", "#fd7e14", "#198754", "#20c997", "#0dcaf0"];
+    let hash = 0;
+    for (let i = 0; i < (name?.length || 0); i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash % colors.length);
+    return colors[index];
+  };
+
+  const handleOpenModal = (club) => {
+    setClubSeleccionado(club);
+    setShowModal(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    document.body.style.overflow = 'unset';
+  };
+
   const clubesFiltrados = clubes.filter((club) =>
     club.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
-
-  // 3. Función para generar un avatar con iniciales (ya que no hay logos)
-  const getInitials = (name) => {
-    return name ? name.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2) : "C";
-  };
 
   return (
     <>
       <Navbar />
 
       <div className="container py-5" style={{ minHeight: "80vh" }}>
-        <h2 className="fw-bold mb-4 text-center">Clubes Registrados</h2>
-
-        {/* Buscador */}
-        <div className="row mb-5">
-            <div className="col-md-6 mx-auto">
-                <input 
-                  type="text" 
-                  className="form-control buscador shadow-sm" 
-                  placeholder="Buscar club por nombre..."
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                />
-            </div>
+        <div className="text-center mb-5">
+          <h2 className="fw-bold display-6 text-dark">Alianzas de Robótica</h2>
+          <p className="text-muted">Las instituciones que impulsan la tecnología en la liga</p>
         </div>
 
-        {/* Estado de carga o vacío */}
+        {/* Buscador */}
+        <div className="row justify-content-center mb-5">
+          <div className="col-md-6">
+            <div className="input-group shadow-sm rounded-pill overflow-hidden border bg-white px-3">
+              <span className="input-group-text bg-white border-0"><FaSearch className="text-muted" /></span>
+              <input 
+                type="text" 
+                className="form-control border-0 shadow-none py-2" 
+                placeholder="Buscar club por nombre..."
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
         {loading ? (
-            <div className="text-center py-5">
-                <div className="spinner-border text-primary" role="status"></div>
-                <p className="mt-2 text-muted">Cargando clubes...</p>
-            </div>
-        ) : clubesFiltrados.length === 0 ? (
-            <div className="text-center py-5 text-muted">
-                <h4>No se encontraron clubes registrados</h4>
-            </div>
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status"></div>
+            <p className="mt-2 text-muted">Sincronizando clubes...</p>
+          </div>
         ) : (
-            <div className="row g-4">
-              {clubesFiltrados.map((club) => (
-                <div key={club.idClub} className="col-12 col-sm-6 col-md-4">
-                  <div className="card h-100 shadow-sm border-0 club-card">
-                    {/* Imagen / Avatar Dinámico */}
-                    <div className="d-flex align-items-center justify-content-center bg-primary text-white" 
-                         style={{ height: "160px", fontSize: "3rem", fontWeight: "bold" }}>
+          <div className="row g-4">
+            {clubesFiltrados.length === 0 ? (
+              <div className="text-center py-5 text-muted">
+                <h4>No se encontraron clubes registrados</h4>
+              </div>
+            ) : (
+              clubesFiltrados.map((club) => (
+                <div key={club.idClub} className="col-12 col-sm-6 col-lg-4">
+                  <div 
+                    className="card h-100 shadow-sm border-0 robot-card-modern overflow-hidden" 
+                    onClick={() => handleOpenModal(club)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {/* Banner */}
+                    <div 
+                      className="d-flex align-items-center justify-content-center text-white"
+                      style={{ 
+                          height: "140px", 
+                          fontSize: "2.8rem", 
+                          fontWeight: "800",
+                          backgroundColor: getColorFromName(club.nombre),
+                          textShadow: "1px 1px 5px rgba(0,0,0,0.15)"
+                      }}
+                    >
                       {getInitials(club.nombre)}
                     </div>
 
-                    <div className="card-body text-center d-flex flex-column">
-                      <h5 className="fw-bold mb-1">{club.nombre}</h5>
-                      <p className="text-muted small mb-3">
-                        <i className="bi bi-people-fill me-1"></i>
-                        {club.cantidadCompetidores} {club.cantidadCompetidores === 1 ? 'Competidor' : 'Competidores'}
-                      </p>
+                    <div className="card-body p-4">
+                      <div className="mb-4">
+                        <h4 className="fw-bold mb-0 text-dark" style={{ letterSpacing: '-0.5px' }}>
+                          {club.nombre}
+                        </h4>
+                        <small className="text-primary fw-bold d-flex align-items-center gap-1">
+                          <FaBuilding size={12}/> ORGANIZACIÓN OFICIAL
+                        </small>
+                      </div>
                       
-                      <div className="mt-auto">
-                          <button 
-                            className="btn btn-outline-primary w-100 fw-bold"
-                            data-bs-toggle="modal" 
-                            data-bs-target="#modalClub"
-                            onClick={() => setClubSeleccionado(club)}
-                          >
-                            Ver Detalles
-                          </button>
+                      {/* Info Grid */}
+                      <div className="d-flex flex-column gap-3">
+                        <div className="d-flex align-items-center">
+                          <div className="icon-box-small me-3 text-primary bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                            <FaUsers size={14} />
+                          </div>
+                          <div className="overflow-hidden">
+                            <small className="text-muted d-block" style={{fontSize: '0.6rem', fontWeight: '700', textTransform: 'uppercase'}}>Comunidad</small>
+                            <span className="fw-bold text-dark text-truncate d-block" style={{ fontSize: '0.95rem' }}>
+                              {club.cantidadCompetidores} {club.cantidadCompetidores === 1 ? 'Miembro' : 'Miembros'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="d-flex align-items-center border-top pt-2">
+                          <div className="icon-box-small me-3 text-danger bg-danger-subtle rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                            <FaMapMarkerAlt size={14} />
+                          </div>
+                          <div className="overflow-hidden">
+                            <small className="text-muted d-block" style={{fontSize: '0.6rem', fontWeight: '700', textTransform: 'uppercase'}}>Ubicación</small>
+                            <span className="fw-semibold text-secondary text-truncate d-block" style={{ fontSize: '0.85rem' }}>
+                              {club.direccionFiscal || "Dirección no disponible"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
+              )
+            ))}
+          </div>
+        )}
+
+        {/* --- MODAL MANUAL --- */}
+        {showModal && (
+          <div className="custom-modal-overlay" onClick={handleCloseModal}>
+            <div className="custom-modal-content animate__animated animate__zoomIn" onClick={e => e.stopPropagation()}>
+              <div className="modal-header-manual">
+                <h5 className="fw-bold m-0 text-muted" style={{fontSize: '0.8rem'}}>PERFIL INSTITUCIONAL</h5>
+                <button className="close-btn" onClick={handleCloseModal}><FaTimes /></button>
+              </div>
+              
+              <div className="modal-body-manual p-0">
+                <div className="text-center py-4 px-3" style={{ background: 'linear-gradient(to bottom, #f8f9fa, #ffffff)' }}>
+                    <div 
+                      className="d-flex align-items-center justify-content-center text-white rounded-circle shadow mx-auto mb-3"
+                      style={{ 
+                        width: "85px", 
+                        height: "85px", 
+                        fontSize: "2rem", 
+                        fontWeight: "800",
+                        backgroundColor: getColorFromName(clubSeleccionado?.nombre),
+                        border: '4px solid white'
+                      }}
+                    >
+                      {getInitials(clubSeleccionado?.nombre)}
+                    </div>
+                   <h3 className="text-dark fw-bold mb-0">{clubSeleccionado?.nombre}</h3>
+                   <span className="badge bg-primary-subtle text-primary rounded-pill px-3">Organización Oficial</span>
+                </div>
+                
+                <div className="p-4 bg-light mx-3 rounded-4 mb-4">
+                    <h6 className="fw-bold d-flex align-items-center gap-2 mb-3 text-secondary border-bottom pb-2" style={{fontSize: '0.85rem'}}>
+                      <FaIdCard className="text-info" /> DATOS DE CONTACTO
+                    </h6>
+                    
+                    {/* Dirección en el Modal */}
+                    <div className="mb-3 d-flex align-items-center gap-3">
+                        <FaMapMarkerAlt className="text-danger" />
+                        <div>
+                            <small className="text-muted d-block" style={{fontSize: '0.7rem'}}>DIRECCIÓN FISCAL</small>
+                            <span className="fw-bold" style={{fontSize: '0.9rem'}}>{clubSeleccionado?.direccionFiscal || "No registrada"}</span>
+                        </div>
+                    </div>
+
+                    {/* Correo en el Modal */}
+                    <div className="mb-3 d-flex align-items-center gap-3">
+                        <FaEnvelope className="text-primary" />
+                        <div>
+                            <small className="text-muted d-block" style={{fontSize: '0.7rem'}}>CORREO DE CONTACTO</small>
+                            <a href={`mailto:${clubSeleccionado?.correoContacto}`} className="fw-bold text-primary text-decoration-none" style={{fontSize: '0.9rem'}}>
+                              {clubSeleccionado?.correoContacto || "Sin correo registrado"}
+                            </a>
+                        </div>
+                    </div>
+
+                    <div className="d-flex align-items-center gap-3">
+                        <FaUsers className="text-success" />
+                        <div>
+                            <small className="text-muted d-block" style={{fontSize: '0.7rem'}}>TOTAL DE MIEMBROS</small>
+                            <span className="fw-bold" style={{fontSize: '0.9rem'}}>{clubSeleccionado?.cantidadCompetidores} Pilotos registrados</span>
+                        </div>
+                    </div>
+                </div>
+              </div>
+              
+              <div className="modal-footer-manual px-4 pb-4">
+                <button className="btn-cerrar-manual shadow-sm" onClick={handleCloseModal}>Cerrar Perfil</button>
+              </div>
             </div>
+          </div>
         )}
       </div>
-
-      {/* MODAL DEL CLUB */}
-      <div className="modal fade" id="modalClub" tabIndex="-1" aria-hidden="true">
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content border-0 shadow">
-            {clubSeleccionado && (
-              <>
-                <div className="modal-header bg-primary text-white">
-                  <h5 className="modal-title fw-bold">Perfil del Club</h5>
-                  <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-
-                <div className="modal-body text-center py-4">
-                  <div className="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3 shadow" 
-                       style={{ width: "100px", height: "100px", fontSize: "2rem" }}>
-                    {getInitials(clubSeleccionado.nombre)}
-                  </div>
-                  
-                  <h3 className="fw-bold">{clubSeleccionado.nombre}</h3>
-                  <p className="text-muted mb-4">Miembro oficial de la plataforma Robotech</p>
-                  
-                  <div className="row g-2 text-start">
-                      <div className="col-12 border-bottom pb-2 mb-2">
-                          <strong>ID del Club:</strong> <span className="float-end text-muted">{clubSeleccionado.idClub}</span>
-                      </div>
-                      <div className="col-12">
-                          <strong>Competidores registrados:</strong> <span className="float-end badge bg-info text-dark">{clubSeleccionado.cantidadCompetidores}</span>
-                      </div>
-                  </div>
-                </div>
-
-                <div className="modal-footer border-0">
-                  <button className="btn btn-secondary w-100" data-bs-dismiss="modal">Cerrar</button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
       <Footer />
     </>
   );
