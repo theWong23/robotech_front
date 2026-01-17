@@ -1,65 +1,92 @@
-.club-card {
-  background: #fff;
-  padding: 25px;
-  border-radius: 16px;
-  width: 380px;
-  text-align: center;
-  margin-bottom: 30px;
+/* Paleta de Colores Robotech */
+:root {
+    --robotech-dark: #004d4d; /* El verde turquesa del Navbar */
+    --robotech-blue: #0d6efd;
+    --robotech-green: #198754;
+    --robotech-orange: #e67e22;
+    --robotech-bg: #f4f7f6;
 }
 
-.club-avatar {
-  width: 110px;
-  height: 110px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #ddd;
-  margin-bottom: 10px;
+/* Banner de Header */
+.club-header-banner {
+    background: var(--robotech-dark); /* Sincronizado con Navbar */
+    background: linear-gradient(135deg, #003333 0%, #004d4d 100%);
 }
 
-.club-name {
-  font-size: 24px;
-  font-weight: bold;
+.club-profile-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: white;
 }
 
-.club-desc {
-  color: #777;
-  margin-bottom: 15px;
+/* KPI Cards - Colores vibrantes de la segunda imagen */
+.kpi-card-main {
+    border-radius: 20px;
+    transition: transform 0.3s ease;
 }
 
-.club-stats {
-  display: flex;
-  justify-content: space-around;
-  margin: 20px 0;
+.kpi-card-main:hover { transform: translateY(-5px); }
+
+.kpi-blue { background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%); }
+.kpi-green { background: linear-gradient(135deg, #198754 0%, #11663f 100%); }
+.kpi-orange { background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); }
+
+.kpi-label-mini { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; opacity: 0.9; }
+.kpi-value-main { font-size: 2.5rem; font-weight: 800; }
+.kpi-icon-container { font-size: 2rem; opacity: 0.8; background: rgba(255,255,255,0.2); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 15px; }
+
+/* Botón y Tabla */
+.btn-primary-robotech {
+    background-color: var(--robotech-blue);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    transition: 0.3s;
 }
 
-.club-stats div {
-  text-align: center;
+.btn-primary-robotech:hover { background-color: #0056b3; transform: scale(1.02); }
+
+.table-robotech-head { background-color: #f8f9fa; border-bottom: 2px solid #eee; }
+
+.badge-code-robotech {
+    background: var(--robotech-dark);
+    color: #00ffd5; /* Color neón cian para resaltar el código */
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: bold;
 }
 
-.btn-generate {
-  background: #28a745;
-  color: white;
-  padding: 10px;
-  border: none;
-  border-radius: 10px;
-  width: 100%;
-  cursor: pointer;
-  font-size: 16px;
-  transition: 0.2s;
+/* Status Pills */
+.status-pill-robotech {
+    padding: 5px 15px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
 }
 
-.btn-generate:hover {
-  background: #1e7e34;
+.pill-green { background: #e8f5e9; color: #2e7d32; }
+.pill-red { background: #ffebee; color: #c62828; }
+.pill-gray { background: #f5f5f5; color: #757575; }
+
+/* Progress Bar */
+.progress-robotech-container {
+    background: #e9ecef;
+    height: 10px;
+    border-radius: 10px;
+    width: 140px;
+    overflow: hidden;
 }
 
-.codigos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 15px;
-}
+.progress-robotech-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+.fill-teal { background: var(--robotech-dark); }
+.fill-red { background: #dc3545; }
 
-.codigo-card {
-  background: #fff;
-  padding: 15px;
-  border-radius: 12px;
-}
+/* Spinner Color Custom */
+.text-teal { color: var(--robotech-dark); }
