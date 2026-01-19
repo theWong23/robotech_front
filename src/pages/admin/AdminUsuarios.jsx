@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { FaUserPlus, FaEdit, FaTrash, FaKey, FaSearch, FaUserShield, FaEnvelope, FaPhone } from "react-icons/fa";
 import api from "../../services/axiosConfig"; // Asegúrate de que apunte a tu configuración de axios
+import { consultarDni } from "../../services/dniService";
 
 const ROLES = ["ADMINISTRADOR", "SUBADMINISTRADOR", "JUEZ", "CLUB", "COMPETIDOR"];
 const ESTADOS = ["ACTIVO", "INACTIVO", "PENDIENTE"];
@@ -24,6 +25,7 @@ export default function AdminUsuarios() {
 
   // Formulario
   const [form, setForm] = useState({
+    dni:"",
     nombres: "",
     apellidos: "",
     correo: "",
@@ -36,6 +38,29 @@ export default function AdminUsuarios() {
   const [newPass, setNewPass] = useState("");
   const isEditing = useMemo(() => Boolean(editingId), [editingId]);
 
+
+
+  const cargarPorDni = async () => {
+  try {
+    Swal.fire({
+      title: "Consultando DNI...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    const data = await consultarDni(form.dni);
+
+    setForm(prev => ({
+      ...prev,
+      nombres: data.nombres,
+      apellidos: data.apellidos
+    }));
+
+    Swal.close();
+  } catch (err) {
+    Swal.fire("Error", err.message, "error");
+  }
+};
   // ============================
   // CARGA DE DATOS
   // ============================
@@ -63,6 +88,7 @@ export default function AdminUsuarios() {
   const usuariosFiltrados = useMemo(() => {
     const term = busqueda.toLowerCase();
     return usuarios.filter(u => 
+      (u.dni?.toLowerCase() || "").includes(term) ||
       (u.nombres?.toLowerCase() || "").includes(term) ||
       (u.apellidos?.toLowerCase() || "").includes(term) ||
       (u.correo?.toLowerCase() || "").includes(term) ||
@@ -87,31 +113,33 @@ export default function AdminUsuarios() {
   };
 
   const abrirEditar = (u) => {
-    setEditingId(u.idUsuario);
-    setForm({
-      nombres: u.nombres ?? "",
-      apellidos: u.apellidos ?? "",
-      correo: u.correo ?? "",
-      telefono: u.telefono ?? "",
-      contrasena: "", // No cargamos la contraseña por seguridad
-      rol: u.rol ?? "",
-      estado: u.estado ?? "ACTIVO",
-    });
-    setModal(true);
-  };
+  setEditingId(u.idUsuario);
+  setForm({
+    dni: u.dni ?? "",        // 👈 AQUÍ
+    nombres: u.nombres ?? "",
+    apellidos: u.apellidos ?? "",
+    correo: u.correo ?? "",
+    telefono: u.telefono ?? "",
+    contrasena: "",
+    rol: u.rol ?? "",
+    estado: u.estado ?? "ACTIVO",
+  });
+  setModal(true);
+};
 
   // ============================
   // GUARDAR (LÓGICA DELEGADA AL BACKEND)
   // ============================
   const guardar = async () => {
     // 1. Validación mínima de UI (campos visualmente requeridos)
-    if (!form.nombres || !form.apellidos || !form.correo || !form.rol) {
+    if (!form.dni || !form.nombres || !form.apellidos || !form.correo || !form.rol) {
       return Swal.fire("Atención", "Por favor completa los campos obligatorios (*)", "warning");
     }
 
     try {
       // 2. Preparamos el payload
       const payload = {
+        dni: form.dni.trim(),
         nombres: form.nombres.trim(),
         apellidos: form.apellidos.trim(),
         correo: form.correo.trim(),
@@ -229,6 +257,7 @@ export default function AdminUsuarios() {
               <thead className="bg-light">
                 <tr>
                   <th className="ps-4">Usuario</th>
+                  <th>Dni</th>
                   <th>Contacto</th>
                   <th>Rol</th>
                   <th>Estado</th>
@@ -254,6 +283,12 @@ export default function AdminUsuarios() {
                             <div className="fw-bold text-dark">{u.nombres} {u.apellidos}</div>
                             <small className="text-muted">ID: {u.idUsuario}</small>
                           </div>
+                        </div>
+                      </td>
+                      {/* COLUMNA dni*/}
+                      <td>
+                        <div className="d-flex flex-column small">
+                          <span className="text-secondary"><FaEnvelope className="me-1"/> {u.dni}</span>
                         </div>
                       </td>
 
@@ -324,6 +359,22 @@ export default function AdminUsuarios() {
               </div>
               <div className="modal-body">
                 <div className="row g-2">
+                  <div className="col-6">
+                    <label className="form-label small fw-bold">DNI *</label>
+                    <input
+                      className="form-control"
+                      value={form.dni}
+                      onChange={e => setForm({ ...form, dni: e.target.value })}
+                      placeholder="Documento de identidad"
+                    />
+                    <button
+                      className="btn btn-outline-info"
+                      onClick={cargarPorDni}
+                    >
+                      Cargar
+                    </button>
+                    
+                  </div>
                   <div className="col-6">
                     <label className="form-label small fw-bold">Nombres *</label>
                     <input className="form-control" value={form.nombres} onChange={e => setForm({...form, nombres: e.target.value})} />

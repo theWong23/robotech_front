@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import Swal from "sweetalert2";
 import { FaPlus, FaSearch, FaEdit, FaTrash, FaCheck, FaTimes, FaUserTie, FaEnvelope, FaPhone, FaIdCard } from "react-icons/fa";
 import api from "../../services/axiosConfig";
+import { consultarDni } from "../../services/dniService";
 
 export default function AdminJueces() {
   // =========================
@@ -14,6 +15,7 @@ export default function AdminJueces() {
   const [editingId, setEditingId] = useState(null);
   
   const initialForm = {
+    dni: "",
     nombres: "",
     apellidos: "",
     correo: "",
@@ -39,6 +41,27 @@ export default function AdminJueces() {
 
   const adminId = getAdminId();
 
+  const cargarPorDni = async () => {
+    try {
+      Swal.fire({
+        title: "Consultando DNI...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+  
+      const data = await consultarDni(form.dni);
+  
+      setForm(prev => ({
+        ...prev,
+        nombres: data.nombres,
+        apellidos: data.apellidos
+      }));
+  
+      Swal.close();
+    } catch (err) {
+      Swal.fire("Error", err.message, "error");
+    }
+  };
   // =========================
   // CARGA DE DATOS
   // =========================
@@ -63,6 +86,7 @@ export default function AdminJueces() {
   const juecesFiltrados = useMemo(() => {
     const term = searchTerm.toLowerCase();
     return jueces.filter((j) => 
+      (j.usuario?.dni?.toLowerCase() || "").includes(term) ||
       (j.usuario?.nombres?.toLowerCase() || "").includes(term) ||
       (j.usuario?.apellidos?.toLowerCase() || "").includes(term) ||
       (j.usuario?.correo?.toLowerCase() || "").includes(term) ||
@@ -82,6 +106,7 @@ export default function AdminJueces() {
   const abrirEditar = (j) => {
     setEditingId(j.idJuez);
     setForm({
+      dni: j.usuario?.dni || "",
       nombres: j.usuario?.nombres || "",
       apellidos: j.usuario?.apellidos || "",
       correo: j.usuario?.correo || "",
@@ -94,7 +119,7 @@ export default function AdminJueces() {
 
   const guardar = async () => {
     // 1. Validaciones básicas de campos
-    if (!form.nombres.trim() || !form.apellidos.trim() || !form.correo.trim() || !form.licencia.trim()) {
+    if (!form.dni.trim() || !form.nombres.trim() || !form.apellidos.trim() || !form.correo.trim() || !form.licencia.trim()) {
       return Swal.fire("Atención", "Nombre, Apellidos, Correo y Licencia son campos obligatorios", "warning");
     }
     
@@ -196,6 +221,7 @@ export default function AdminJueces() {
             <thead className="bg-light text-secondary small text-uppercase">
               <tr>
                 <th className="ps-4">Juez / Identidad</th>
+                <th>dni</th>
                 <th>Contacto</th>
                 <th>Licencia</th>
                 <th>Estado</th>
@@ -219,6 +245,11 @@ export default function AdminJueces() {
                           <div className="fw-bold text-dark">{j.usuario?.nombres} {j.usuario?.apellidos}</div>
                           <small className="text-muted d-block" style={{fontSize: '0.7rem'}}>ID: {j.idJuez.substring(0,8).toUpperCase()}</small>
                         </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="d-flex flex-column small">
+                        <span className="text-dark"><FaEnvelope className="me-1 opacity-50"/> {j.usuario?.dni}</span>
                       </div>
                     </td>
                     <td>
@@ -267,6 +298,28 @@ export default function AdminJueces() {
                 </h5>
                 <button type="button" className="btn-close btn-close-white" onClick={() => setModal(false)}></button>
               </div>
+              <div className="modal-body p-4">
+                <div className="row g-3" >
+                  <div className="col-12">
+                <label className="form-label fw-bold text-muted small">
+                  DNI DEL JUEZ *
+                </label>
+                <input
+                  className="form-control rounded-3 bg-light border-0 py-2"
+                  value={form.dni}
+                  onChange={e => setForm({ ...form, dni: e.target.value })}
+                  placeholder="Documento de identidad"
+                />
+                 <button
+                      className="btn btn-outline-info"
+                      onClick={cargarPorDni}
+                    >
+                      Cargar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className="modal-body p-4">
                 <div className="row g-3">
                   <div className="col-md-6">

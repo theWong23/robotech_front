@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import Swal from "sweetalert2";
 import { FaPlus, FaSearch, FaEdit, FaPowerOff, FaBuilding, FaUserTie, FaEnvelope, FaPhone, FaMapMarkerAlt } from "react-icons/fa";
 import api from "../../services/axiosConfig";
+import { consultarDni } from "../../services/dniService";
 
 export default function Clubes() {
   // =========================
@@ -24,6 +25,7 @@ export default function Clubes() {
     correoContacto: "",
     telefonoContacto: "",
     direccionFiscal: "",
+    dniPropietario: "",
     nombresPropietario: "",
     apellidosPropietario: "",
     correoPropietario: "",
@@ -69,6 +71,31 @@ export default function Clubes() {
     Swal.fire("Error", data?.message || "Ocurrió un error inesperado", "error");
   };
 
+  const cargarPorDni = async () => {
+  if (!form.dniPropietario || form.dniPropietario.length !== 8) {
+    return Swal.fire("DNI inválido", "Ingresa un DNI válido de 8 dígitos", "warning");
+  }
+
+  try {
+    Swal.fire({
+      title: "Consultando DNI...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    const data = await consultarDni(form.dniPropietario);
+
+    setForm(prev => ({
+      ...prev,
+      nombresPropietario: data.nombres,
+      apellidosPropietario: data.apellidos
+    }));
+
+    Swal.close();
+  } catch (err) {
+    Swal.fire("Error", err.message, "error");
+  }
+};
   // =========================
   // CARGA DE DATOS
   // =========================
@@ -330,6 +357,21 @@ export default function Clubes() {
                   <h6 className="fw-bold text-success mb-3"><FaUserTie className="me-2"/>Datos del Propietario</h6>
                   <div className="row g-3">
                     <div className="col-md-6">
+                      <label className="form-label small text-muted fw-bold">DNI del Propietario</label>
+                      <input
+                        className="form-control"
+                        value={form.dniPropietario}
+                        onChange={(e) => setField("dniPropietario", e.target.value)}
+                        placeholder="Documento de identidad"
+                      />
+                       <button
+                          className="btn btn-outline-info"
+                          onClick={cargarPorDni}
+                        >
+                          Cargar
+                        </button>
+                    </div>
+                    <div className="col-md-6">
                       <label className="form-label small text-muted fw-bold">Nombres</label>
                       <input className="form-control" value={form.nombresPropietario} onChange={(e) => setField("nombresPropietario", e.target.value)} />
                     </div>
@@ -386,7 +428,7 @@ export default function Clubes() {
                   <div className="mb-3">
                     <label className="form-label fw-bold small text-muted">Teléfono</label>
                     <input className="form-control" value={editando.telefonoContacto} onChange={(e) => setEditando({ ...editando, telefonoContacto: e.target.value })} />
-                  </div>
+                  </div>                  
                 </div>
                 <div className="modal-footer bg-light">
                   <button className="btn btn-secondary" onClick={() => setEditando(null)}>Cancelar</button>

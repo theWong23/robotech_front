@@ -12,10 +12,8 @@ export default function ClubPanel() {
   const items = [
     { label: "Gestión Competidores", to: "competidores", icon: <FaUsers /> },
     { label: "Flota de Robots", to: "robots", icon: <FaRobot /> },
-    { label: "Transferencias", to: "transferencias", icon: <FaExchangeAlt /> },
     { label: "Torneos Disponibles", to: "torneos", icon: <FaTrophy /> },
-    { label: "Inscripciones", to: "inscripciones", icon: <FaClipboardList /> },
-    { label: "Estadísticas", to: "estadisticas", icon: <FaChartLine /> } // Agregué uno extra útil para clubes
+    { label: "Inscripciones", to: "inscripciones", icon: <FaClipboardList /> }
   ];
 
   return (
@@ -26,7 +24,7 @@ export default function ClubPanel() {
       {/* 2. Contenedor Principal (Layout Dashboard) */}
       <div className="d-flex flex-grow-1 dashboard-container">
         
-        {/* Sidebar Izquierdo */}
+        {/* Sidebar Izquierdo  */}
         <div className="sidebar-wrapper border-end bg-white">
           <Sidebar titulo="Panel del Club" items={items} />
         </div>

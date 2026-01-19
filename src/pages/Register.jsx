@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
+import { consultarDni } from "../services/dniService";
 
 export default function Register() {
 
@@ -59,6 +60,28 @@ export default function Register() {
   const [mostrarContra, setMostrarContra] = useState(false);
 
   // --- MANEJO DE INPUTS ---
+
+  const cargarPorDni = async () => {
+    try {
+      Swal.fire({
+        title: "Consultando DNI...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+  
+      const data = await consultarDni(form.dni);
+  
+      setForm(prev => ({
+        ...prev,
+        nombres: data.nombres,
+        apellidos: data.apellidos
+      }));
+  
+      Swal.close();
+    } catch (err) {
+      Swal.fire("Error", err.message, "error");
+    }
+  };
   const cambiar = (e) => {
     const { name, value: rawValue } = e.target;
     let value = rawValue;
@@ -231,7 +254,7 @@ export default function Register() {
           </div>
         )}
 
-        {/* PASO 2: MOSTRAR FORMULARIO */}
+       {/* PASO 2: MOSTRAR FORMULARIO */}
         {codigoValido && (
           <form onSubmit={registrar} className="mt-4">
 
@@ -239,6 +262,7 @@ export default function Register() {
               Registrando para <b>{club?.nombre}</b>
             </div>
 
+            {/* NOMBRES */}
             <label>Nombres</label>
             <input
               className={`form-control ${errores.nombres ? "is-invalid" : form.nombres ? "is-valid" : ""}`}
@@ -249,6 +273,7 @@ export default function Register() {
             />
             <div className="invalid-feedback">{errores.nombres}</div>
 
+            {/* APELLIDOS */}
             <label className="mt-2">Apellidos</label>
             <input
               className={`form-control ${errores.apellidos ? "is-invalid" : form.apellidos ? "is-valid" : ""}`}
@@ -259,17 +284,30 @@ export default function Register() {
             />
             <div className="invalid-feedback">{errores.apellidos}</div>
 
+            {/* DNI + CARGAR */}
             <label className="mt-2">DNI</label>
-            <input
-              className={`form-control ${errores.dni ? "is-invalid" : form.dni.length === 8 ? "is-valid" : ""}`}
-              name="dni"
-              value={form.dni}
-              onChange={cambiar}
-              maxLength="8"
-              required
-            />
+            <div className="d-flex gap-2">
+              <input
+                className={`form-control ${errores.dni ? "is-invalid" : form.dni.length === 8 ? "is-valid" : ""}`}
+                name="dni"
+                value={form.dni}
+                onChange={cambiar}
+                maxLength="8"
+                required
+              />
+
+              <button
+                type="button"
+                className="btn btn-outline-info"
+                disabled={form.dni.length !== 8}
+                onClick={cargarPorDni}
+              >
+                Cargar
+              </button>
+            </div>
             <div className="invalid-feedback">{errores.dni}</div>
 
+            {/* CORREO */}
             <label className="mt-2">Correo electrónico</label>
             <input
               className={`form-control ${errores.correo ? "is-invalid" : form.correo ? "is-valid" : ""}`}
@@ -280,6 +318,7 @@ export default function Register() {
             />
             <div className="invalid-feedback">{errores.correo}</div>
 
+            {/* TELÉFONO */}
             <label className="mt-2">Teléfono</label>
             <input
               className={`form-control ${errores.telefono ? "is-invalid" : form.telefono.length === 9 ? "is-valid" : ""}`}
@@ -291,6 +330,7 @@ export default function Register() {
             />
             <div className="invalid-feedback">{errores.telefono}</div>
 
+            {/* CONTRASEÑA */}
             <label className="mt-2">Contraseña</label>
             <div className="input-group">
               <input
@@ -310,7 +350,7 @@ export default function Register() {
               </button>
             </div>
 
-            {/* Checklist */}
+            {/* CHECKLIST CONTRASEÑA */}
             <ul className="mt-2 small mb-0" style={{ listStyle: "none", paddingLeft: 0 }}>
               <li style={{ color: form.contrasena.length >= 8 ? "green" : "red" }}>
                 {form.contrasena.length >= 8 ? "✔" : "•"} Mínimo 8 caracteres
@@ -327,9 +367,12 @@ export default function Register() {
             </ul>
             <div className="invalid-feedback d-block">{errores.contrasena}</div>
 
-            <button className="btn btn-success w-100 mt-3">Registrarme</button>
+            <button className="btn btn-success w-100 mt-3">
+              Registrarme
+            </button>
           </form>
         )}
+
 
       </div>
     </div>

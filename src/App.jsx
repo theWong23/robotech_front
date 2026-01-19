@@ -26,6 +26,7 @@ import AdminEncuentros from "./pages/admin/AdminEncuentros";
 import AdminGenerarEncuentros from "./pages/admin/AdminGenerarEncuentros";
 import AdminRobots from "./pages/admin/AdminRobots";
 import AdminInscripcion from "./pages/admin/AdminInscripcion";
+import AdminSubAdministradores from "./pages/admin/AdminSubAdministradores";
 
 // ===== SUBADMIN =====
 import SubAdminPanel from "./pages/subadmin/SubAdminPanel";
@@ -77,6 +78,7 @@ function App() {
           <Route path="usuarios" element={<AdminUsuarios />} />
           <Route path="clubes" element={<AdminClubes />} />
           <Route path="jueces" element={<AdminJueces />} />
+          <Route path="subadmin" element={<AdminSubAdministradores />} />
           <Route path="coliseos" element={<AdminColiseos />} />
           <Route path="torneos" element={<AdminTorneos />} />
           <Route path="encuentros" element={<AdminEncuentros />} />
