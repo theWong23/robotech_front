@@ -20,11 +20,18 @@ export default function ClubInscribirEquipo({ categoria }) {
   }, [categoria]);
 
   useEffect(() => {
-    api.get("/club/robots")
+    if (!categoria?.idCategoriaTorneo) {
+      setRobots([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    api.get(`/club/inscripciones/robots-disponibles/${categoria.idCategoriaTorneo}`)
       .then((res) => setRobots(res.data))
       .catch(() => Swal.fire("Error", "No se pudieron cargar los robots", "error"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [categoria?.idCategoriaTorneo]);
 
   const toggleRobot = (id) => {
     if (seleccionados.includes(id)) {
@@ -72,7 +79,8 @@ export default function ClubInscribirEquipo({ categoria }) {
       Swal.fire("✔ Equipo inscrito", "Estado: pendiente", "success");
       setSeleccionados([]);
     } catch (err) {
-      Swal.fire("Error", err?.response?.data ?? "No se pudo inscribir", "error");
+      const message = err?.response?.data?.message ?? err?.response?.data ?? "No se pudo inscribir";
+      Swal.fire("Error", message, "error");
     } finally {
       setSubmitting(false);
     }

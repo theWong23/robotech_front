@@ -1,9 +1,9 @@
 import { FaRobot, FaCalendarAlt, FaInfoCircle } from "react-icons/fa";
 
 export default function InscripcionCard({ inscripcion }) {
-  // 1. Sincronizamos los colores con los estados ACTIVA y ANULADA de SQL
+  // 1. Sincronizamos los colores con los estados ACTIVADA y ANULADA de SQL
   const estadoConfig = {
-    ACTIVA: { color: "success", label: "Activa" },
+    ACTIVADA: { color: "success", label: "Activa" },
     ANULADA: { color: "danger", label: "Anulada" },
   };
 

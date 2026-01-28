@@ -52,7 +52,7 @@ export default function CompetidorInscripciones() {
   const stats = useMemo(() => {
     return {
       total: inscripciones.length,
-      activas: inscripciones.filter(i => i.estado === "ACTIVA").length,
+      activas: inscripciones.filter(i => i.estado === "ACTIVADA").length,
       anuladas: inscripciones.filter(i => i.estado === "ANULADA").length
     };
   }, [inscripciones]);
@@ -144,7 +144,7 @@ export default function CompetidorInscripciones() {
                 onChange={(e) => setFiltroEstado(e.target.value)}
               >
                 <option value="TODOS">Todos los estados</option>
-                <option value="ACTIVA">Activas</option>
+                <option value="ACTIVADA">Activas</option>
                 <option value="ANULADA">Anuladas</option>
               </select>
             </div>

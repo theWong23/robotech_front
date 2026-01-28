@@ -161,7 +161,7 @@ export default function AdminInscripcion() {
                         </td>
 
                         <td>
-                          {i.estado === "ACTIVA" ? (
+                          {i.estado === "ACTIVADA" ? (
                             <span className="badge bg-success bg-opacity-10 text-success d-flex align-items-center gap-1 w-auto" style={{width: 'fit-content'}}>
                               <FaCheckCircle size={12}/> Activa
                             </span>
@@ -173,7 +173,7 @@ export default function AdminInscripcion() {
                         </td>
 
                         <td className="text-end pe-4">
-                          {i.estado === "ACTIVA" && (
+                          {i.estado === "ACTIVADA" && (
                             <button
                               className="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-2"
                               onClick={() => anular(i.idInscripcion)}

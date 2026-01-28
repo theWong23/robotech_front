@@ -57,7 +57,7 @@ export default function ClubInscripciones() {
     return {
       total: inscripciones.length,
       // Ahora contamos según los nuevos estados de tu base de datos
-      activas: inscripciones.filter(i => i.estado === "ACTIVA").length,
+      activas: inscripciones.filter(i => i.estado === "ACTIVADA").length,
       anuladas: inscripciones.filter(i => i.estado === "ANULADA").length
     };
   }, [inscripciones]);
@@ -137,7 +137,7 @@ export default function ClubInscripciones() {
               >
                 <option value="TODOS">Todas las inscripciones</option>
                 {/* Valores sincronizados con el Enum del Backend */}
-                <option value="ACTIVA">Activas</option>
+                <option value="ACTIVADA">Activas</option>
                 <option value="ANULADA">Anuladas</option>
               </select>
             </div>
