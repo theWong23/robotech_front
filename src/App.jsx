@@ -31,6 +31,10 @@ import AdminSubAdministradores from "./pages/admin/AdminSubAdministradores";
 // ===== SUBADMIN =====
 import SubAdminPanel from "./pages/subadmin/SubAdminPanel";
 import SubAdminDashboard from "./pages/subadmin/SubAdminDashboard";
+import SubAdminRegistrarClub from "./pages/subadmin/SubAdminRegistrarClub";
+import SubAdminRegistrarCompetidor from "./pages/subadmin/SubAdminRegistrarCompetidor";
+import SubAdminRegistrarJuez from "./pages/subadmin/SubAdminRegistrarJuez";
+import SubAdminTorneos from "./pages/subadmin/SubAdminTorneos";
 
 // ===== CLUB =====
 import ClubPanel from "./pages/club/ClubPanel";
@@ -98,7 +102,13 @@ function App() {
         <Route path="/subadmin" element={<SubAdminPanel />}>
           <Route index element={<Navigate to="dashboard" />} />
           <Route path="dashboard" element={<SubAdminDashboard />} />
-          {/* aquí irán registrar-club, registrar-comp, etc */}
+
+          
+          {/* Nuevas rutas para los módulos */}
+          <Route path="registrar-club" element={<SubAdminRegistrarClub />} />
+          <Route path="registrar-comp" element={<SubAdminRegistrarCompetidor />} />
+          <Route path="registrar-juez" element={<SubAdminRegistrarJuez />} />
+          <Route path="torneos" element={<SubAdminTorneos />} />
         </Route>
 
         {/* ================= CLUB ================= */}
