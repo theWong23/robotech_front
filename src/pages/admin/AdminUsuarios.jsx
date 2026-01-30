@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
-import { FaUserPlus, FaEdit, FaTrash, FaKey, FaSearch, FaUserShield, FaEnvelope, FaPhone, FaUserCheck } from "react-icons/fa";
+import { 
+  FaUserPlus, FaEdit, FaTrash, FaKey, FaSearch, FaUserShield, 
+  FaEnvelope, FaPhone, FaEye, FaEyeSlash 
+} from "react-icons/fa";
 import api from "../../services/axiosConfig"; // Asegúrate de que apunte a tu configuración de axios
 import { consultarDni } from "../../services/dniService";
 
-const ROLES = ["ADMINISTRADOR", "SUBADMINISTRADOR", "JUEZ", "CLUB", "COMPETIDOR", "CLUB_COMPETIDOR"];
+const ROLES = ["ADMINISTRADOR", "SUBADMINISTRADOR", "JUEZ", "CLUB", "COMPETIDOR"];
 const ESTADOS = ["ACTIVO", "INACTIVO", "PENDIENTE"];
 
 export default function AdminUsuarios() {
@@ -14,7 +17,10 @@ export default function AdminUsuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState("");
+  const [currentPass, setCurrentPass] = useState("");
 
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
   // Modales
   const [modal, setModal] = useState(false);
   const [modalPass, setModalPass] = useState(false);
@@ -22,6 +28,11 @@ export default function AdminUsuarios() {
   // Identificadores para edición
   const [editingId, setEditingId] = useState(null);
   const [passId, setPassId] = useState(null);
+
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
+  const [fieldErrors, setFieldErrors] = useState({});
+  const hasError = (field) => Boolean(fieldErrors[field]);
 
   // Formulario
   const [form, setForm] = useState({
@@ -71,8 +82,7 @@ export default function AdminUsuarios() {
       // Aseguramos que sea un array para evitar errores de map
       setUsuarios(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "No se pudo cargar la lista de usuarios", "error");
+      Swal.fire("Error", err.response?.data?.message || "No se pudo cargar la lista de usuarios", "error");
     } finally {
       setLoading(false);
     }
@@ -101,9 +111,10 @@ export default function AdminUsuarios() {
   // ============================
   const resetForm = () => {
     setForm({
-      nombres: "", apellidos: "", correo: "", telefono: "",
+      dni: "", nombres: "", apellidos: "", correo: "", telefono: "",
       contrasena: "", rol: "", estado: "ACTIVO"
     });
+    setFieldErrors({});
   };
 
   const abrirCrear = () => {
@@ -113,31 +124,93 @@ export default function AdminUsuarios() {
   };
 
   const abrirEditar = (u) => {
-  setEditingId(u.idUsuario);
-  setForm({
-    dni: u.dni ?? "",        // 👈 AQUÍ
-    nombres: u.nombres ?? "",
-    apellidos: u.apellidos ?? "",
-    correo: u.correo ?? "",
-    telefono: u.telefono ?? "",
-    contrasena: "",
-    rol: u.rol ?? "",
-    estado: u.estado ?? "ACTIVO",
-  });
-  setModal(true);
-};
+    setEditingId(u.idUsuario);
+    setForm({
+      dni: u.dni ?? "",        
+      nombres: u.nombres ?? "",
+      apellidos: u.apellidos ?? "",
+      correo: u.correo ?? "",
+      telefono: u.telefono ?? "",
+      contrasena: "",
+      rol: u.rol ?? "",
+      estado: u.estado ?? "ACTIVO",
+    });
+    setModal(true);
+  };
+
+  const validarCampo = (field, value) => {
+    switch (field) {
+      case "correo":
+        if (!value) return "El correo es obligatorio";
+        if (!/^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$/.test(value))
+          return "Formato de correo inválido";
+        return null;
+
+      case "telefono":
+        if (!value) return "El teléfono es obligatorio";
+        if (!/^9\d{8}$/.test(value))
+          return "El teléfono debe tener 9 dígitos y empezar con 9";
+        return null;
+
+      case "nombres":
+        if (!value) return "Los nombres son obligatorios";
+        return null;
+
+      case "apellidos":
+        if (!value) return "Los apellidos son obligatorios";
+        return null;
+
+      default:
+        return null;
+    }
+  };
+
+    const handleChange = (field, value) => {
+    setForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+
+    const error = validarCampo(field, value);
+
+    if (field === "contrasena") {
+      if (!value) {
+        error = "La contraseña es obligatoria";
+      } else if (!passwordRegex.test(value)) {
+        error = "Debe tener 8 caracteres, 1 mayúscula, 1 número y 1 carácter especial";
+      }
+    }
+    setFieldErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
+  };
 
   // ============================
   // GUARDAR (LÓGICA DELEGADA AL BACKEND)
   // ============================
   const guardar = async () => {
-    // 1. Validación mínima de UI (campos visualmente requeridos)
-    if (!form.dni || !form.nombres || !form.apellidos || !form.correo || !form.rol) {
-      return Swal.fire("Atención", "Por favor completa los campos obligatorios (*)", "warning");
+    const errores = {};
+
+    ["correo", "telefono", "nombres", "apellidos"].forEach(field => {
+      const error = validarCampo(field, form[field]);
+      if (error) errores[field] = error;
+    });
+
+    if (Object.keys(errores).length > 0) {
+      setFieldErrors(errores);
+
+      Swal.fire({
+        icon: "error",
+        title: "Formulario incompleto",
+        text: "Corrige los errores antes de continuar",
+        confirmButtonText: "Aceptar",
+      });
+
+      return;
     }
 
     try {
-      // 2. Preparamos el payload
       const payload = {
         dni: form.dni.trim(),
         nombres: form.nombres.trim(),
@@ -146,27 +219,80 @@ export default function AdminUsuarios() {
         telefono: form.telefono.trim(),
         rol: form.rol,
         estado: form.estado,
-        // Solo enviamos contraseña si estamos creando uno nuevo
-        ...( !isEditing && { contrasena: form.contrasena } ) 
+        ...( !isEditing && { contrasena: form.contrasena } )
       };
 
-      // 3. Enviamos al Backend (quien hará las validaciones fuertes de negocio)
+      let res;
+
       if (!isEditing) {
-        await api.post("/admin/usuarios", payload);
-        Swal.fire({ icon: 'success', title: 'Creado', text: 'Usuario registrado correctamente', timer: 1500, showConfirmButton: false });
+        res = await api.post("/admin/usuarios", payload);
       } else {
-        await api.put(`/admin/usuarios/${editingId}`, payload);
-        Swal.fire({ icon: 'success', title: 'Actualizado', text: 'Datos modificados correctamente', timer: 1500, showConfirmButton: false });
+        res = await api.put(`/admin/usuarios/${editingId}`, payload);
       }
 
+      console.log("RESPUESTA BACKEND:", res.data);
+
+      if (!isEditing) { // Solo si estamos creando usuario
+        if (!form.contrasena) errores.contrasena = "La contraseña es obligatoria";
+        else if (!passwordRegex.test(form.contrasena)) 
+          errores.contrasena = "Debe tener 8 caracteres, 1 mayúscula, 1 número y 1 carácter especial";
+      }
+
+      if (res.data?.fieldErrors) {
+        setFieldErrors(res.data.fieldErrors);
+
+        const mensaje = Object.values(res.data.fieldErrors)[0];
+
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: mensaje, // mensaje exacto del backend
+          confirmButtonText: "Aceptar",
+        });
+
+        return;
+      }
+
+    
+      Swal.fire({
+        icon: "success",
+        title: isEditing ? "Actualizado" : "Creado",
+        text: isEditing
+          ? "Datos modificados correctamente"
+          : "Usuario registrado correctamente",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
       setModal(false);
-      cargar(); // Recargamos la lista
+      cargar();
 
     } catch (err) {
-      // 4. Manejo de Errores del Backend
-      // Mostramos el mensaje específico que envíe el backend (ej: "Correo duplicado")
-      const msg = err.response?.data?.mensaje || err.response?.data || "Error al procesar la solicitud";
-      Swal.fire("Error", msg, "error");
+      console.error("ERROR HTTP REAL:", err);
+
+      const data = err.response?.data;
+
+      if (data?.fieldErrors) {
+        setFieldErrors(data.fieldErrors);
+
+        const mensaje = Object.values(data.fieldErrors)[0];
+
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: mensaje,
+          confirmButtonText: "Aceptar",
+        });
+
+        return;
+      }
+
+      Swal.fire({
+        icon: "error",
+        title: "Error inesperado",
+        text: data?.message || "No se pudo procesar la solicitud",
+        confirmButtonText: "Aceptar",
+      });
     }
   };
 
@@ -189,47 +315,44 @@ export default function AdminUsuarios() {
         Swal.fire("Procesado", "Acción realizada correctamente.", "success");
         cargar();
       } catch (err) {
-        const msg = err.response?.data?.mensaje || "No se pudo eliminar el usuario";
+        const msg = err.response?.data?.message || "No se pudo eliminar el usuario";
         Swal.fire("Error", msg, "error");
       }
     }
   };
 
   const cambiarPassword = async () => {
-    if (!newPass.trim()) return Swal.fire("Error", "La contraseña no puede estar vacía", "warning");
-    
+    if (!currentPass.trim() || !newPass.trim()) {
+      return Swal.fire("Error", "Ambas contraseñas son obligatorias", "warning");
+    }
+
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+    if (!passwordRegex.test(newPass)) {
+      return Swal.fire("Error", "La nueva contraseña no cumple los requisitos de seguridad", "warning");
+    }
+
     try {
-      // El backend validará longitud, complejidad, etc.
-      await api.put(`/admin/usuarios/${passId}/password`, newPass, { 
-          headers: { "Content-Type": "text/plain" } 
+      await api.put(`/admin/usuarios/${passId}/cambiar-contrasena`, {
+        contrasenaActual: currentPass,
+        nuevaContrasena: newPass
       });
-      Swal.fire("Éxito", "Contraseña actualizada", "success");
+
+      Swal.fire("Éxito", "Contraseña actualizada correctamente", "success");
       setModalPass(false);
       setNewPass("");
-    } catch (err) {
-      const msg = err.response?.data?.mensaje || "No se pudo cambiar la contraseña. Revisa que cumpla los requisitos.";
-      Swal.fire("Error", msg, "error");
-    }
-  };
+      setCurrentPass("");
 
-  const habilitarPropietario = async (idUsuario) => {
-    const confirm = await Swal.fire({
-      title: "¿Habilitar como competidor?",
-      text: "Se creará el perfil competidor para el propietario del club.",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Sí, habilitar",
-      cancelButtonText: "Cancelar"
-    });
-    if (!confirm.isConfirmed) return;
-
-    try {
-      await api.put(`/admin/club/usuario/${idUsuario}/habilitar-competidor`);
-      Swal.fire("Éxito", "Propietario habilitado como competidor.", "success");
-      cargar();
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data || "No se pudo habilitar";
-      Swal.fire("Error", msg, "error");
+      const data = err.response?.data;
+
+      if (data?.fieldErrors) {
+        const campo = Object.keys(data.fieldErrors)[0];
+        const mensaje = data.fieldErrors[campo];
+
+        return Swal.fire("Error", mensaje, "error");
+      }
+
+      Swal.fire("Error", data?.message || "No se pudo cambiar la contraseña", "error");
     }
   };
 
@@ -346,12 +469,6 @@ export default function AdminUsuarios() {
                       {/* COLUMNA ACCIONES */}
                       <td className="text-end pe-4">
                         <div className="btn-group">
-                          {u.rol === "CLUB" && (
-                            <button className="btn btn-outline-success btn-sm" title="Habilitar como competidor"
-                                    onClick={() => habilitarPropietario(u.idUsuario)}>
-                              <FaUserCheck />
-                            </button>
-                          )}
                           <button className="btn btn-outline-secondary btn-sm" title="Cambiar Contraseña" 
                                   onClick={() => { setPassId(u.idUsuario); setNewPass(""); setModalPass(true); }}>
                             <FaKey />
@@ -391,10 +508,8 @@ export default function AdminUsuarios() {
                     <input
                       className="form-control"
                       value={form.dni}
-                      onChange={e => setForm({ ...form, dni: e.target.value.replace(/\D/g, "").slice(0, 8) })}
+                      onChange={e => setForm({ ...form, dni: e.target.value })}
                       placeholder="Documento de identidad"
-                      inputMode="numeric"
-                      maxLength={8}
                     />
                     <button
                       className="btn btn-outline-info"
@@ -414,17 +529,30 @@ export default function AdminUsuarios() {
                   </div>
                   <div className="col-12">
                     <label className="form-label small fw-bold">Correo Electrónico *</label>
-                    <input type="email" className="form-control" value={form.correo} onChange={e => setForm({...form, correo: e.target.value})} />
+                    <input
+                      type="email"
+                      className={`form-control ${hasError("correo") ? "is-invalid" : ""}`}
+                      value={form.correo}
+                      onChange={e => handleChange("correo", e.target.value)}
+                    />
+                    {hasError("correo") && (
+                      <div className="invalid-feedback">
+                        {fieldErrors.correo}
+                      </div>
+                    )}
                   </div>
                   <div className="col-6">
                     <label className="form-label small fw-bold">Teléfono</label>
                     <input
-                      className="form-control"
+                      className={`form-control ${hasError("telefono") ? "is-invalid" : ""}`}
                       value={form.telefono}
-                      onChange={e => setForm({ ...form, telefono: e.target.value.replace(/\D/g, "").slice(0, 9) })}
-                      inputMode="numeric"
-                      maxLength={9}
+                      onChange={e => handleChange("telefono", e.target.value)}
                     />
+                    {hasError("telefono") && (
+                      <div className="invalid-feedback">
+                        {fieldErrors.telefono}
+                      </div>
+                    )}
                   </div>
                   <div className="col-6">
                     <label className="form-label small fw-bold">Rol *</label>
@@ -435,9 +563,24 @@ export default function AdminUsuarios() {
                   </div>
                   
                   {!isEditing && (
-                    <div className="col-12">
-                        <label className="form-label small fw-bold">Contraseña Inicial *</label>
-                        <input type="password" className="form-control" value={form.contrasena} onChange={e => setForm({...form, contrasena: e.target.value})} placeholder="Definida por el backend si vacía" />
+                    <div className="input-group">
+                      <input
+                        type={showNewPass ? "text" : "password"}
+                        className={`form-control ${hasError("contrasena") ? "is-invalid" : ""}`}
+                        value={form.contrasena}
+                        onChange={e => handleChange("contrasena", e.target.value)}
+                        placeholder="Contraseña inicial"
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={() => setShowNewPass(!showNewPass)}
+                      >
+                        {showNewPass ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                      {hasError("contrasena") && (
+                        <div className="invalid-feedback">{fieldErrors.contrasena}</div>
+                      )}
                     </div>
                   )}
 
@@ -465,12 +608,61 @@ export default function AdminUsuarios() {
             <div className="modal-content border-0 shadow">
               <div className="modal-header bg-dark text-white">
                 <h6 className="modal-title fw-bold"><FaKey className="me-2"/>Cambiar Contraseña</h6>
-                <button type="button" className="btn-close btn-close-white" onClick={() => setModalPass(false)}></button>
+                <button 
+                  type="button" 
+                  className="btn-close btn-close-white" 
+                  onClick={() => {
+                    setPassId(null); 
+                    setNewPass(""); 
+                    setCurrentPass("");
+                    setModalPass(false);
+                    setFieldErrors(prev => ({ ...prev, newPass: undefined })); // reset error
+                  }}
+                ></button>
               </div>
               <div className="modal-body">
-                <input type="password" className="form-control text-center" placeholder="Nueva contraseña" 
-                       value={newPass} onChange={e => setNewPass(e.target.value)} />
-                <div className="form-text text-center small mt-1">El backend validará la seguridad</div>
+                <input 
+                  type="password" 
+                  className="form-control mb-2 text-center" 
+                  placeholder="Contraseña actual"
+                  value={currentPass}
+                  onChange={e => setCurrentPass(e.target.value)} 
+                />
+
+                <div className="input-group">
+                  <input
+                    type={showNewPass ? "text" : "password"}
+                    className={`form-control text-center ${hasError("newPass") ? "is-invalid" : ""}`}
+                    placeholder="Nueva contraseña"
+                    value={newPass}
+                    onChange={e => {
+                      setNewPass(e.target.value);
+                      // Validación en tiempo real
+                      if (!passwordRegex.test(e.target.value)) {
+                        setFieldErrors(prev => ({
+                          ...prev,
+                          newPass: "Debe tener 8 caracteres, 1 mayúscula, 1 número y 1 carácter especial"
+                        }));
+                      } else {
+                        setFieldErrors(prev => ({ ...prev, newPass: undefined }));
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => setShowNewPass(!showNewPass)}
+                  >
+                    {showNewPass ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                  {hasError("newPass") && (
+                    <div className="invalid-feedback">{fieldErrors.newPass}</div>
+                  )}
+                </div>
+
+                <div className="form-text text-center small mt-1">
+                  El backend validará la seguridad
+                </div>
               </div>
               <div className="modal-footer justify-content-center bg-light">
                 <button className="btn btn-dark w-100" onClick={cambiarPassword}>Actualizar</button>
