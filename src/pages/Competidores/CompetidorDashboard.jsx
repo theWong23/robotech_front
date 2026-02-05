@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom"; // 1. IMPORTAR useNavigate
 import api from "../../services/axiosConfig";
 import Swal from "sweetalert2";
@@ -13,6 +13,12 @@ export default function CompetidorDashboard() {
   const [competidor, setCompetidor] = useState(null);
   const [editando, setEditando] = useState(false);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [juezEstado, setJuezEstado] = useState(null);
+  const [licencia, setLicencia] = useState("");
+  const [loadingJuez, setLoadingJuez] = useState(false);
+  const [codigoClub, setCodigoClub] = useState("");
+  const [misSolicitudes, setMisSolicitudes] = useState([]);
+  const [loadingSolicitudes, setLoadingSolicitudes] = useState(false);
 
   const [form, setForm] = useState({
     nombres: "",
@@ -36,6 +42,16 @@ export default function CompetidorDashboard() {
   const storedUser = localStorage.getItem("usuario");
   const entidad = storedUser ? JSON.parse(storedUser) : null;
   const idCompetidor = entidad?.idCompetidor;
+  const displayName = useMemo(() => {
+    const fullName = `${entidad?.nombres || ""} ${entidad?.apellidos || ""}`.trim();
+    return (
+      fullName ||
+      entidad?.nombre ||
+      entidad?.usuario ||
+      entidad?.correo ||
+      "Competidor"
+    );
+  }, [entidad]);
 
   if (!entidad || !idCompetidor) {
     return <p>No autorizado. Inicia sesión nuevamente.</p>;
@@ -47,6 +63,81 @@ export default function CompetidorDashboard() {
   useEffect(() => {
     cargarPerfil();
   }, []);
+
+  const cargarSolicitudes = async () => {
+    try {
+      setLoadingSolicitudes(true);
+      const res = await api.get("/competidor/club-solicitudes");
+      setMisSolicitudes(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingSolicitudes(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarSolicitudes();
+  }, []);
+
+  const solicitarClub = async () => {
+    if (!codigoClub.trim()) {
+      return Swal.fire("Atenci?n", "Ingresa el c?digo del club", "warning");
+    }
+    try {
+      await api.post("/competidor/club-solicitudes", { codigoClub: codigoClub.trim() });
+      Swal.fire("Solicitud enviada", "Queda pendiente de aprobaci?n del club", "success");
+      setCodigoClub("");
+      cargarSolicitudes();
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data || "No se pudo enviar";
+      Swal.fire("Error", msg, "error");
+    }
+  };
+
+  const cancelarSolicitud = async (id) => {
+    try {
+      await api.post(`/competidor/club-solicitudes/${id}/cancelar`);
+      Swal.fire("Cancelado", "Solicitud cancelada", "info");
+      cargarSolicitudes();
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data || "No se pudo cancelar";
+      Swal.fire("Error", msg, "error");
+    }
+  };
+
+
+  const cargarEstadoJuez = async () => {
+    try {
+      setLoadingJuez(true);
+      const res = await api.get("/competidor/juez/estado");
+      setJuezEstado(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingJuez(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarEstadoJuez();
+  }, []);
+
+  const postularJuez = async () => {
+    if (!licencia.trim()) {
+      return Swal.fire("Atenci?n", "Ingresa tu n?mero de licencia", "warning");
+    }
+    try {
+      await api.post("/competidor/juez/postular", { licencia: licencia.trim() });
+      Swal.fire("Solicitud enviada", "Queda pendiente de aprobaci?n", "success");
+      setLicencia("");
+      cargarEstadoJuez();
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data || "No se pudo enviar la solicitud";
+      Swal.fire("Error", msg, "error");
+    }
+  };
+
 
   const cargarPerfil = async () => {
     try {
@@ -214,6 +305,20 @@ export default function CompetidorDashboard() {
   // =============================
   return (
     <div className="perfil-container">
+      <div className="competidor-welcome p-4 p-md-5 mb-4 rounded-4 shadow-sm text-white">
+        <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+          <div>
+            <p className="text-uppercase small fw-bold mb-2 opacity-75">Panel de competidor</p>
+            <h2 className="fw-bold mb-1">¡Hola, {displayName}!</h2>
+            <p className="mb-0 opacity-75">
+              Tu perfil está listo para competir y destacar en el torneo.
+            </p>
+          </div>
+          <div className="badge bg-light text-dark fw-bold px-3 py-2 align-self-md-start">
+            Robotech 2026
+          </div>
+        </div>
+      </div>
 
       {/* HEADER */}
       <div className="perfil-header">
@@ -386,6 +491,83 @@ export default function CompetidorDashboard() {
           </button>
         )}
       </div>
+
+      <div className="card shadow-sm border-0 mt-4">
+        <div className="card-body">
+          <h5 className="fw-bold mb-2">Unirme a un Club</h5>
+          <p className="text-muted">Ingresa el c?digo de un club para solicitar ingreso.</p>
+          <div className="d-flex flex-column flex-md-row gap-2 mb-3">
+            <input
+              className="form-control"
+              placeholder="C?digo del club"
+              value={codigoClub}
+              onChange={(e) => setCodigoClub(e.target.value)}
+            />
+            <button className="btn btn-primary" onClick={solicitarClub}>
+              Enviar solicitud
+            </button>
+          </div>
+
+          <h6 className="fw-bold mb-2">Mis solicitudes</h6>
+          {loadingSolicitudes ? (
+            <div className="text-muted">Cargando...</div>
+          ) : misSolicitudes.length === 0 ? (
+            <div className="text-muted">No tienes solicitudes.</div>
+          ) : (
+            <div className="list-group">
+              {misSolicitudes.map((s) => (
+                <div key={s.idSolicitud} className="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <div className="fw-bold">{s.nombreClub}</div>
+                    <div className="small text-muted">Estado: {s.estado}</div>
+                  </div>
+                  {s.estado === "PENDIENTE" && (
+                    <button className="btn btn-outline-danger btn-sm" onClick={() => cancelarSolicitud(s.idSolicitud)}>
+                      Cancelar
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="card shadow-sm border-0 mt-4">
+        <div className="card-body">
+          <h5 className="fw-bold mb-2">Postulaci?n a Juez</h5>
+          {loadingJuez ? (
+            <div className="text-muted">Cargando estado...</div>
+          ) : juezEstado && juezEstado.estado !== "RECHAZADO" ? (
+            <div className="alert alert-info mb-0">
+              Estado: <strong>{juezEstado.estado}</strong> | Licencia: <strong>{juezEstado.licencia}</strong>
+            </div>
+          ) : (
+            <>
+              <p className="text-muted">
+                Si te aprueban como juez, pasar?s a ser agente libre y solo podr?s competir en individuales.
+              </p>
+              <div className="d-flex flex-column flex-md-row gap-2">
+                <input
+                  className="form-control"
+                  placeholder="N?mero de licencia"
+                  value={licencia}
+                  onChange={(e) => setLicencia(e.target.value)}
+                />
+                <button className="btn btn-primary" onClick={postularJuez}>
+                  Enviar solicitud
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <style>{`
+        .competidor-welcome {
+          background: linear-gradient(135deg, #0ea5e9, #22c55e);
+        }
+      `}</style>
     </div>
   );
 }

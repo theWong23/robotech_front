@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Swal from "sweetalert2";
 import api from "../../services/axiosConfig";
 import { FaUsers, FaRobot, FaTicketAlt, FaPlus, FaCalendarAlt, FaUserFriends, FaInfoCircle, FaCheckCircle, FaExclamationCircle, FaHourglassHalf } from "react-icons/fa";
@@ -14,6 +14,17 @@ export default function ClubDashboard() {
   const storedUser = localStorage.getItem("usuario");
   const entidad = storedUser ? JSON.parse(storedUser) : null;
   const idClub = entidad?.idClub;
+  const displayName = useMemo(() => {
+    const fullName = `${entidad?.nombres || ""} ${entidad?.apellidos || ""}`.trim();
+    return (
+      fullName ||
+      entidad?.nombre ||
+      entidad?.usuario ||
+      entidad?.correo ||
+      club?.nombresPropietario ||
+      "Club"
+    );
+  }, [entidad, club?.nombresPropietario]);
 
   const cargarDashboard = useCallback(async () => {
     if (!idClub) return;
@@ -92,7 +103,17 @@ export default function ClubDashboard() {
             />
           </div>
           <div>
+            <p className="opacity-75 mb-1 text-uppercase small fw-bold">
+              Bienvenido, {displayName}
+            </p>
             <h1 className="display-5 fw-bold mb-1">{club?.nombre}</h1>
+            {club?.codigoClub && (
+              <div className="d-flex align-items-center gap-2 mb-1">
+                <span className="badge bg-light text-dark border">
+                  <FaTicketAlt className="me-1" /> C?digo del club: {club.codigoClub}
+                </span>
+              </div>
+            )}
             <p className="opacity-75 mb-0 d-flex align-items-center gap-2">
               <FaInfoCircle /> {club?.descripcion || "Gestión de sede y competidores registrados."}
             </p>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FaUsers, FaTrophy, FaBuilding, FaGavel } from "react-icons/fa";
 import api from "../../services/axiosConfig"; 
 
@@ -10,6 +10,22 @@ export default function SubAdminDashboard() {
     jueces: 0,
   });
   const [loading, setLoading] = useState(true);
+  const displayName = useMemo(() => {
+    const storedUser = localStorage.getItem("usuario");
+    try {
+      const user = storedUser ? JSON.parse(storedUser) : null;
+      const fullName = `${user?.nombres || ""} ${user?.apellidos || ""}`.trim();
+      return (
+        fullName ||
+        user?.nombre ||
+        user?.usuario ||
+        user?.correo ||
+        "SubAdministrador"
+      );
+    } catch {
+      return "SubAdministrador";
+    }
+  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -59,12 +75,20 @@ export default function SubAdminDashboard() {
   return (
     <div className="container-fluid px-4 py-4 animate__animated animate__fadeIn">
       
-      {/* HEADER DE BIENVENIDA (Botón eliminado) */}
-      <div className="mb-5 bg-white p-4 rounded-4 shadow-sm border-start border-primary border-5">
-        <h2 className="fw-bold text-dark mb-1">¡Hola de nuevo, SubAdmin! 👋</h2>
-        <p className="text-muted mb-0 small fw-bold text-uppercase ls-1">
-          Panel de control administrativo - Robotech 2026
-        </p>
+      {/* HEADER DE BIENVENIDA */}
+      <div className="mb-5 p-4 rounded-4 shadow-sm text-white subadmin-welcome">
+        <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+          <div>
+            <p className="text-uppercase small fw-bold mb-2 opacity-75">Panel SubAdministrador</p>
+            <h2 className="fw-bold mb-1">¡Hola, {displayName}!</h2>
+            <p className="mb-0 opacity-75">
+              Supervisa el crecimiento del torneo y mantén la operación al día.
+            </p>
+          </div>
+          <div className="badge bg-light text-dark fw-bold px-3 py-2 align-self-md-start">
+            Robotech 2026
+          </div>
+        </div>
       </div>
 
       {/* TARJETAS DE ESTADÍSTICAS (KPIs) */}
@@ -98,6 +122,9 @@ export default function SubAdminDashboard() {
         .ls-1 { letter-spacing: 0.5px; }
         .transition-all:hover {
           transform: translateY(-5px);
+        }
+        .subadmin-welcome {
+          background: linear-gradient(135deg, #0f766e, #14b8a6);
         }
       `}</style>
     </div>

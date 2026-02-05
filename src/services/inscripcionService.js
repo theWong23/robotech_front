@@ -30,3 +30,11 @@ export const obtenerInscripcionesCompetidor = async () => {
   const res = await api.get("inscripciones/competidor");
   return res.data;
 };
+
+// ===============================
+// INSCRIPCI?N INDIVIDUAL (COMPETIDOR/JUEZ)
+// ===============================
+export const inscribirIndividualCompetidor = async (data) => {
+  const res = await api.post("competidor/inscripciones/individual", data);
+  return res.data;
+};

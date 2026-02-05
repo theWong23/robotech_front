@@ -26,13 +26,13 @@ const ClubRobots = () => {
     return <div className="loader">Cargando robots…</div>;
   }
 
-  const rol = localStorage.getItem("rol") || "";
+  const roles = JSON.parse(localStorage.getItem("roles") || "[]");
 
   return (
     <div className="robots-container">
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
         <h2 className="robots-title mb-0">Mis Robots</h2>
-        {rol === "CLUB_COMPETIDOR" && (
+        {roles.includes("COMPETIDOR") && (
           <Link className="btn btn-outline-primary btn-sm" to="/competidor/robots">
             Registrar mis robots personales
           </Link>

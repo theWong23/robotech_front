@@ -8,6 +8,8 @@ export default function SubAdminPanel() {
     { label: "Registrar Club", to: "registrar-club" },
     { label: "Registrar Competidor", to: "registrar-comp" },
     { label: "Registrar Juez", to: "registrar-juez" },
+    { label: "Gestionar Jueces", to: "jueces" },
+    { label: "Transferencias Propietario", to: "transferencias-propietario" },
     { label: "Crear Torneo", to: "torneos" }
   ];
 

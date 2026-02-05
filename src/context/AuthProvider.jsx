@@ -10,7 +10,11 @@ export default function AuthProvider({ children }) {
   });
 
   const [token, setToken] = useState(localStorage.getItem("token") || "");
-  const [rol, setRol] = useState(localStorage.getItem("rol") || "");
+  const [roles, setRoles] = useState(() => {
+    const r = localStorage.getItem("roles");
+    try { return r ? JSON.parse(r) : []; }
+    catch { return []; }
+  });
 
   const [entidad, setEntidad] = useState(() => {
     const e = localStorage.getItem("entidad");
@@ -22,22 +26,29 @@ export default function AuthProvider({ children }) {
   const login = (data) => {
 
     const normalizedUser = (() => {
-      if (data.rol === "CLUB_COMPETIDOR" && data.usuario?.club && data.usuario?.competidor) {
-        const club = data.usuario.club;
-        const competidor = data.usuario.competidor;
+      const ent = data.entidad || {};
+      if (ent.club && ent.competidor) {
+        const club = ent.club;
+        const competidor = ent.competidor;
         return { ...club, ...competidor, club, competidor };
       }
-      return data.usuario;
+      if (ent.competidor) return ent.competidor;
+      if (ent.club) return ent.club;
+      if (ent.juez) return ent.juez;
+      if (ent.usuario) return ent.usuario;
+      return data.usuario || null;
     })();
+
+    const nextRoles = Array.isArray(data.roles) ? data.roles : (data.rol ? [data.rol] : []);
 
     setUser(normalizedUser);
     setToken(data.token);
-    setRol(data.rol);
+    setRoles(nextRoles);
     setEntidad(data.entidad);
 
     localStorage.setItem("usuario", JSON.stringify(normalizedUser));
     localStorage.setItem("token", data.token);
-    localStorage.setItem("rol", data.rol);
+    localStorage.setItem("roles", JSON.stringify(nextRoles));
     localStorage.setItem("entidad", JSON.stringify(data.entidad));
   };
 
@@ -45,7 +56,7 @@ export default function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     setToken("");
-    setRol("");
+    setRoles([]);
     setEntidad(null);
 
     localStorage.clear();
@@ -54,7 +65,7 @@ export default function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, rol, entidad, login, logout }}>
+    <AuthContext.Provider value={{ user, token, roles, entidad, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

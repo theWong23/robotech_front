@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Swal from "sweetalert2";
-import { FaPlus, FaSearch, FaEdit, FaTrash, FaCheck, FaTimes, FaUserTie, FaEnvelope, FaPhone, FaIdCard } from "react-icons/fa";
+import { FaPlus, FaSearch, FaEdit, FaTrash, FaCheck, FaTimes, FaUserTie, FaEnvelope, FaPhone, FaIdCard, FaBan } from "react-icons/fa";
 import api from "../../services/axiosConfig";
 import { consultarDni } from "../../services/dniService";
 
@@ -177,6 +177,28 @@ export default function AdminJueces() {
     }
   };
 
+  const inactivarLicencia = async (idJuez) => {
+    const result = await Swal.fire({
+      title: "?Inactivar licencia?",
+      text: "El juez dejar? de calificar y solo podr? competir.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "S?, inactivar",
+      confirmButtonColor: "#d33"
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await api.put(`/admin/jueces/${idJuez}/inactivar`, {}, { headers: { "admin-id": adminId } });
+      Swal.fire("Listo", "Licencia inactivada", "success");
+      cargar();
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data || "No se pudo inactivar";
+      Swal.fire("Error", msg, "error");
+    }
+  };
+
   const cambiarEstado = async (idJuez, accion) => {
     try {
       await api.put(`/admin/jueces/${idJuez}/${accion}`, {}, { headers: { "admin-id": adminId } });
@@ -274,6 +296,9 @@ export default function AdminJueces() {
                             <button className="btn btn-sm btn-white text-success border-0 py-2" title="Aprobar" onClick={() => cambiarEstado(j.idJuez, 'aprobar')}><FaCheck /></button>
                             <button className="btn btn-sm btn-white text-danger border-0 py-2" title="Rechazar" onClick={() => cambiarEstado(j.idJuez, 'rechazar')}><FaTimes /></button>
                           </>
+                        )}
+                        {j.estadoValidacion === "APROBADO" && (
+                          <button className="btn btn-sm btn-white text-danger border-0 py-2" title="Inactivar licencia" onClick={() => inactivarLicencia(j.idJuez)}><FaBan /></button>
                         )}
                         <button className="btn btn-sm btn-white text-primary border-0 py-2" title="Editar" onClick={() => abrirEditar(j)}><FaEdit /></button>
                         <button className="btn btn-sm btn-white text-danger border-0 py-2" title="Eliminar" onClick={() => eliminar(j.idJuez)}><FaTrash /></button>

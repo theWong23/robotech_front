@@ -42,7 +42,7 @@ export default function AdminUsuarios() {
     correo: "",
     telefono: "",
     contrasena: "",
-    rol: "",
+    roles: [],
     estado: "ACTIVO",
   });
 
@@ -102,7 +102,7 @@ export default function AdminUsuarios() {
       (u.nombres?.toLowerCase() || "").includes(term) ||
       (u.apellidos?.toLowerCase() || "").includes(term) ||
       (u.correo?.toLowerCase() || "").includes(term) ||
-      (u.rol?.toLowerCase() || "").includes(term)
+      ((u.roles || []).join(' ').toLowerCase()).includes(term)
     );
   }, [usuarios, busqueda]);
 
@@ -112,7 +112,7 @@ export default function AdminUsuarios() {
   const resetForm = () => {
     setForm({
       dni: "", nombres: "", apellidos: "", correo: "", telefono: "",
-      contrasena: "", rol: "", estado: "ACTIVO"
+      contrasena: "", roles: [], estado: "ACTIVO"
     });
     setFieldErrors({});
   };
@@ -132,7 +132,7 @@ export default function AdminUsuarios() {
       correo: u.correo ?? "",
       telefono: u.telefono ?? "",
       contrasena: "",
-      rol: u.rol ?? "",
+      roles: u.roles ?? [],
       estado: u.estado ?? "ACTIVO",
     });
     setModal(true);
@@ -217,7 +217,7 @@ export default function AdminUsuarios() {
         apellidos: form.apellidos.trim(),
         correo: form.correo.trim(),
         telefono: form.telefono.trim(),
-        rol: form.rol,
+        roles: form.roles,
         estado: form.estado,
         ...( !isEditing && { contrasena: form.contrasena } )
       };
@@ -447,11 +447,11 @@ export default function AdminUsuarios() {
                       {/* COLUMNA ROL */}
                       <td>
                         <span className={`badge rounded-pill border ${
-                          u.rol === "ADMINISTRADOR" ? "bg-dark text-white border-dark" :
-                          u.rol === "JUEZ" ? "bg-info-subtle text-info-emphasis border-info" :
+                          (u.roles || []).includes("ADMINISTRADOR") ? "bg-dark text-white border-dark" :
+                          (u.roles || []).includes("JUEZ") ? "bg-info-subtle text-info-emphasis border-info" :
                           "bg-light text-secondary border-secondary"
                         }`}>
-                          {u.rol}
+                          {(u.roles || []).join(', ')}
                         </span>
                       </td>
 
@@ -555,9 +555,16 @@ export default function AdminUsuarios() {
                     )}
                   </div>
                   <div className="col-6">
-                    <label className="form-label small fw-bold">Rol *</label>
-                    <select className="form-select" value={form.rol} onChange={e => setForm({...form, rol: e.target.value})}>
-                      <option value="">-- Seleccionar --</option>
+                    <label className="form-label small fw-bold">Roles *</label>
+                    <select
+                      className="form-select"
+                      multiple
+                      value={form.roles}
+                      onChange={e => setForm({
+                        ...form,
+                        roles: Array.from(e.target.selectedOptions).map(o => o.value)
+                      })}
+                    >
                       {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
                   </div>

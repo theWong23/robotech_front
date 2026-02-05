@@ -14,6 +14,14 @@ export default function Torneos() {
   const [torneoSeleccionado, setTorneoSeleccionado] = useState(null);
   const [categorias, setCategorias] = useState([]);
   const [loadingCategorias, setLoadingCategorias] = useState(false);
+  const roles = (() => {
+    try { return JSON.parse(localStorage.getItem("roles") || "[]"); } catch { return []; }
+  })();
+  const usuario = (() => {
+    try { return JSON.parse(localStorage.getItem("usuario")); } catch { return null; }
+  })();
+  const puedeInscribirseAgenteLibre = roles.includes("COMPETIDOR") && !usuario?.idClub;
+
 
   useEffect(() => {
     cargarTorneos();
@@ -210,12 +218,22 @@ export default function Torneos() {
                         <div className="border rounded-3 p-3 h-100 d-flex flex-column gap-2">
                           <div className="fw-bold text-dark">{c.categoria}</div>
                           <div className="text-muted small">{c.modalidad}</div>
-                          <Link
-                            className="btn btn-outline-dark btn-sm mt-auto"
-                            to={`/torneos/${torneoSeleccionado.idTorneo}/categorias/${c.idCategoriaTorneo}/encuentros`}
-                          >
-                            Ver cuadro de encuentros
-                          </Link>
+                          <div className="d-flex flex-column gap-2 mt-auto">
+                            <Link
+                              className="btn btn-outline-dark btn-sm"
+                              to={`/torneos/${torneoSeleccionado.idTorneo}/categorias/${c.idCategoriaTorneo}/encuentros`}
+                            >
+                              Ver cuadro de encuentros
+                            </Link>
+                            {puedeInscribirseAgenteLibre && torneoSeleccionado?.estado === "INSCRIPCIONES_ABIERTAS" && c.modalidad === "INDIVIDUAL" && (
+                              <Link
+                                className="btn btn-success btn-sm"
+                                to={`/competidor/torneos/${torneoSeleccionado.idTorneo}/categorias/${c.idCategoriaTorneo}/inscribir`}
+                              >
+                                Inscribirme (Agente libre)
+                              </Link>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}

@@ -9,6 +9,7 @@ export default function AdminPanel() {
     { label: "Gestionar Torneos", to: "torneos" },
     { label: "Gestionar Jueces", to: "jueces" },
     { label: "Gestionar Clubes", to: "clubes" },
+    { label: "Transferencias Propietario", to: "transferencias-propietario" },
     { label: "Gestionar Subadministrador", to: "subadmin" },
     { label: "Gestionar Robots", to: "robots" },
     { label: "Gestionar Encuentros", to: "encuentros"},

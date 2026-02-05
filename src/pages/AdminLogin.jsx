@@ -27,35 +27,35 @@ export default function AdminLogin() {
 
       Swal.close();
 
-      // ✅ Guardar datos correctamente
+      const roles = Array.isArray(res.data.roles) ? res.data.roles : [];
+
+      // ? Guardar datos correctamente
       localStorage.setItem("usuario", JSON.stringify(res.data.usuario));
-      localStorage.setItem("rol", res.data.rol);
+      localStorage.setItem("roles", JSON.stringify(roles));
       localStorage.setItem("token", res.data.token);
 
-      // ✅ Configurar axios para futuras peticiones protegidas
+      // ? Configurar axios para futuras peticiones protegidas
       axios.defaults.headers.common["Authorization"] =
         `Bearer ${res.data.token}`;
 
       Swal.fire({
         icon: "success",
         title: "Bienvenido",
-        text: `${res.data.usuario.correo} (${res.data.rol})`
+        text: `${res.data.usuario.correo} (${roles.join(", ")})`
       });
 
-      // ✅ Redirección CORRECTA según rol real de la BD
-      switch (res.data.rol) {
-        case "ADMINISTRADOR":
-          window.location.href = "/admin";
-          break;
-
-        case "SUBADMINISTRADOR":
-          window.location.href = "/subadmin";
-          break;
-
-        default:
-          Swal.fire("Error", "Rol no autorizado", "error");
-          break;
+      // ? Redireccion CORRECTA segun roles reales de la BD
+      if (roles.includes("ADMINISTRADOR")) {
+        window.location.href = "/admin";
+        return;
       }
+
+      if (roles.includes("SUBADMINISTRADOR")) {
+        window.location.href = "/subadmin";
+        return;
+      }
+
+      Swal.fire("Error", "Rol no autorizado", "error");
 
     } catch (err) {
       Swal.close();
@@ -94,7 +94,7 @@ export default function AdminLogin() {
           <input
             type="password"
             className="form-control mb-3"
-            placeholder="Contraseña"
+            placeholder="Contrasena"
             value={contrasena}
             onChange={(e) => setContrasena(e.target.value)}
             required

@@ -1,5 +1,5 @@
 import { Outlet } from "react-router-dom";
-import { FaUsers, FaRobot, FaExchangeAlt, FaTrophy, FaClipboardList, FaChartLine } from "react-icons/fa"; 
+import { FaUsers, FaRobot, FaExchangeAlt, FaTrophy, FaClipboardList, FaChartLine, FaUserTie, FaInbox } from "react-icons/fa"; 
 import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";
 
@@ -13,6 +13,8 @@ export default function ClubPanel() {
     { label: "Gestión Competidores", to: "competidores", icon: <FaUsers /> },
     { label: "Flota de Robots", to: "robots", icon: <FaRobot /> },
     { label: "Transferencias", to: "transferencias", icon: <FaExchangeAlt /> },
+    { label: "Solicitudes Ingreso", to: "solicitudes-ingreso", icon: <FaInbox /> },
+    { label: "Transferir Propietario", to: "transferir-propietario", icon: <FaUserTie /> },
     { label: "Torneos Disponibles", to: "torneos", icon: <FaTrophy /> },
     { label: "Inscripciones", to: "inscripciones", icon: <FaClipboardList /> }
   ];

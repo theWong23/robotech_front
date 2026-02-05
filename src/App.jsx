@@ -28,6 +28,7 @@ import AdminGenerarEncuentros from "./pages/admin/AdminGenerarEncuentros";
 import AdminRobots from "./pages/admin/AdminRobots";
 import AdminInscripcion from "./pages/admin/AdminInscripcion";
 import AdminSubAdministradores from "./pages/admin/AdminSubAdministradores";
+import AdminTransferenciasPropietario from "./pages/admin/AdminTransferenciasPropietario";
 
 // ===== SUBADMIN =====
 import SubAdminPanel from "./pages/subadmin/SubAdminPanel";
@@ -47,12 +48,17 @@ import ClubCategoriasTorneo from "./pages/club/ClubCategoriasTorneo";
 import ClubInscribir from "./pages/club/ClubInscribir";
 import ClubInscripciones from "./pages/club/ClubInscripciones";
 import ClubTransferencias from "./pages/club/ClubTransferencias";
+import ClubTransferirPropietario from "./pages/club/ClubTransferirPropietario";
+import ClubSolicitudesIngreso from "./pages/club/ClubSolicitudesIngreso";
 
 // ===== COMPETIDORES =====
 import CompetidorPanel from "./pages/Competidores/CompetidorPanel";
 import CompetidorDashboard from "./pages/Competidores/CompetidorDashboard";
 import CompetidorRobots from "./pages/Competidores/CompetidorRobots";
 import CompetidorInscripciones from "./pages/Competidores/CompetidorInscripciones";
+import CompetidorTorneos from "./pages/Competidores/CompetidorTorneos";
+import CompetidorRanking from "./pages/Competidores/CompetidorRanking";
+import CompetidorInscribir from "./pages/Competidores/CompetidorInscribir";
 
 // ===== JUECES =====
 import JuezPanel from "./pages/Jueces/JuezPanel";
@@ -87,6 +93,7 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="usuarios" element={<AdminUsuarios />} />
           <Route path="clubes" element={<AdminClubes />} />
+          <Route path="transferencias-propietario" element={<AdminTransferenciasPropietario />} />
           <Route path="jueces" element={<AdminJueces />} />
           <Route path="subadmin" element={<AdminSubAdministradores />} />
           <Route path="coliseos" element={<AdminColiseos />} />
@@ -114,6 +121,8 @@ function App() {
           <Route path="registrar-club" element={<SubAdminRegistrarClub />} />
           <Route path="registrar-comp" element={<SubAdminRegistrarCompetidor />} />
           <Route path="registrar-juez" element={<SubAdminRegistrarJuez />} />
+          <Route path="jueces" element={<AdminJueces />} />
+          <Route path="transferencias-propietario" element={<AdminTransferenciasPropietario />} />
           <Route path="torneos" element={<SubAdminTorneos />} />
         </Route>
 
@@ -124,6 +133,8 @@ function App() {
           <Route path="competidores" element={<ClubCompetidores />} />
           <Route path="robots" element={<ClubRobots />} />
           <Route path="transferencias" element={<ClubTransferencias />} />
+          <Route path="solicitudes-ingreso" element={<ClubSolicitudesIngreso />} />
+          <Route path="transferir-propietario" element={<ClubTransferirPropietario />} />
           <Route path="torneos" element={<ClubTorneos />} />
           <Route path="inscripciones" element={<ClubInscripciones />} />
           <Route
@@ -141,7 +152,10 @@ function App() {
           <Route index element={<Navigate to="dashboard" />} />
           <Route path="dashboard" element={<CompetidorDashboard />} />
           <Route path="robots" element={<CompetidorRobots />} />
+          <Route path="torneos" element={<CompetidorTorneos />} />
+          <Route path="ranking" element={<CompetidorRanking />} />
           <Route path="inscripciones" element={<CompetidorInscripciones />} />
+          <Route path="torneos/:idTorneo/categorias/:idCategoriaTorneo/inscribir" element={<CompetidorInscribir />} />
         </Route>
 
         {/* ================= JUECES ================= */}
