@@ -6,7 +6,7 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-api.interceptors.request.use(config => {
+api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -27,8 +27,9 @@ api.interceptors.response.use(
 
       if (typeof window !== "undefined") {
         const path = window.location.pathname || "";
-        const isAdmin = path.startsWith("/admin");
-        const onLogin = path.startsWith("/login") || path.startsWith("/admin/login");
+        const isAdmin = path.startsWith("/admin") || path.startsWith("/subadmin");
+        const onLogin =
+          path.startsWith("/login") || path.startsWith("/admin/login");
 
         localStorage.removeItem("usuario");
         localStorage.removeItem("token");

@@ -263,7 +263,7 @@ export default function AdminRobots() {
       {!loading && totalRobots > 0 && (
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 gap-2">
           <div className="text-muted small">
-            PÃ¡gina {page} de {totalPages}
+            Página {page} de {totalPages}
           </div>
           <div className="btn-group">
             <button className="btn btn-outline-secondary btn-sm" onClick={() => setPage(1)} disabled={page <= 1}>
@@ -276,7 +276,7 @@ export default function AdminRobots() {
               Siguiente
             </button>
             <button className="btn btn-outline-secondary btn-sm" onClick={() => setPage(totalPages)} disabled={page >= totalPages}>
-              Ãšltimo
+              Último
             </button>
           </div>
         </div>

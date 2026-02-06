@@ -47,7 +47,7 @@ export default function AdminLogin() {
         roles.includes("SUBADMINISTRADOR") ? "SUBADMINISTRADOR" :
         "";
 
-      // Centralizar manejo de sesiÃ³n en el AuthProvider
+      // Centralizar manejo de sesión en el AuthProvider
       login(res.data);
 
       Swal.fire({

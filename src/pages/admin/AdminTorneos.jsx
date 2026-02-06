@@ -322,9 +322,9 @@ export default function AdminTorneos() {
           <div className="btn-group">
             <button className="btn btn-outline-secondary btn-sm" onClick={() => setPage(1)} disabled={page <= 1}>Primero</button>
             <button className="btn btn-outline-secondary btn-sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>Anterior</button>
-            <span className="btn btn-light btn-sm disabled">PÃ¡gina {page} de {totalPages}</span>
+            <span className="btn btn-light btn-sm disabled">Página {page} de {totalPages}</span>
             <button className="btn btn-outline-secondary btn-sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Siguiente</button>
-            <button className="btn btn-outline-secondary btn-sm" onClick={() => setPage(totalPages)} disabled={page >= totalPages}>Ãšltimo</button>
+            <button className="btn btn-outline-secondary btn-sm" onClick={() => setPage(totalPages)} disabled={page >= totalPages}>Último</button>
           </div>
         </div>
       )}

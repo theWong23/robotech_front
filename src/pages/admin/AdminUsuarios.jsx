@@ -523,7 +523,7 @@ export default function AdminUsuarios() {
               Anterior
             </button>
             <span className="btn btn-light btn-sm disabled">
-              PÃ¡gina {page} de {totalPages}
+              Página {page} de {totalPages}
             </span>
             <button
               className="btn btn-outline-secondary btn-sm"
@@ -537,7 +537,7 @@ export default function AdminUsuarios() {
               onClick={() => setPage(totalPages)}
               disabled={page >= totalPages}
             >
-              Ãšltimo
+              Último
             </button>
           </div>
         </div>
