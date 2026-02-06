@@ -5,6 +5,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import "../styles/encuentrosPublicos.css";
 import { FaTrophy, FaLayerGroup, FaGamepad, FaRegCalendarAlt, FaMapMarkerAlt } from "react-icons/fa";
+import Pagination from "../components/Pagination";
 
 const nextPowerOfTwo = (n) => {
   if (!n || n < 1) return 0;
@@ -85,6 +86,10 @@ export default function EncuentrosPublicos() {
   const [categorias, setCategorias] = useState([]);
   const [categoria, setCategoria] = useState(null);
   const [encuentros, setEncuentros] = useState([]);
+  const [standingsPage, setStandingsPage] = useState(1);
+  const [roundsPage, setRoundsPage] = useState(1);
+  const standingsPerPage = 10;
+  const roundsPerPage = 3;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -116,6 +121,11 @@ export default function EncuentrosPublicos() {
       isMounted = false;
     };
   }, [idTorneo, idCategoriaTorneo]);
+
+  useEffect(() => {
+    setStandingsPage(1);
+    setRoundsPage(1);
+  }, [encuentros.length]);
 
   const tipoEncuentro = encuentros[0]?.tipo || "";
   const rounds = useMemo(() => buildRounds(encuentros), [encuentros]);
@@ -164,6 +174,18 @@ export default function EncuentrosPublicos() {
       return a.nombre.localeCompare(b.nombre);
     });
   }, [encuentros]);
+
+  const standingsTotalPages = Math.max(1, Math.ceil(standings.length / standingsPerPage));
+  const standingsPaginados = standings.slice(
+    (standingsPage - 1) * standingsPerPage,
+    standingsPage * standingsPerPage
+  );
+
+  const roundsTotalPages = Math.max(1, Math.ceil(leagueRounds.length / roundsPerPage));
+  const leagueRoundsPaginados = leagueRounds.slice(
+    (roundsPage - 1) * roundsPerPage,
+    roundsPage * roundsPerPage
+  );
 
   const leagueMeta = useMemo(() => {
     const liga = encuentros.filter((e) => e.tipo === "TODOS_CONTRA_TODOS");
@@ -357,9 +379,9 @@ export default function EncuentrosPublicos() {
                     <span>PP</span>
                     <span>PTS</span>
                   </div>
-                  {standings.map((row, idx) => (
+                  {standingsPaginados.map((row, idx) => (
                     <div key={row.key} className="standings-row">
-                      <span>{idx + 1}</span>
+                      <span>{(standingsPage - 1) * standingsPerPage + idx + 1}</span>
                       <span className="name">{row.nombre}</span>
                       <span>{row.pj}</span>
                       <span>{row.pg}</span>
@@ -368,11 +390,16 @@ export default function EncuentrosPublicos() {
                     </div>
                   ))}
                 </div>
+                <Pagination
+                  page={standingsPage}
+                  totalPages={standingsTotalPages}
+                  onPageChange={setStandingsPage}
+                />
               </div>
               <div className="matches-card">
                 <div className="standings-header">Partidos por ronda</div>
                 <div className="matches-list">
-                  {leagueRounds.map((round) => (
+                  {leagueRoundsPaginados.map((round) => (
                     <div key={round.round} className="mb-3">
                       <div className="fw-bold text-uppercase text-muted small mb-2">Ronda {round.round}</div>
                       {round.matches.map((match) => {
@@ -398,6 +425,11 @@ export default function EncuentrosPublicos() {
                     </div>
                   ))}
                 </div>
+                <Pagination
+                  page={roundsPage}
+                  totalPages={roundsTotalPages}
+                  onPageChange={setRoundsPage}
+                />
               </div>
             </div>
           </section>

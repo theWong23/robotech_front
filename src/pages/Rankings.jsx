@@ -3,15 +3,22 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import api from "../services/api"; // Asegúrate de que esta ruta sea correcta para tu proyecto
 import { FaTrophy, FaRobot, FaUsers, FaShieldAlt, FaMedal, FaChartLine } from "react-icons/fa";
+import Pagination from "../components/Pagination";
 
 export default function Rankings() {
   const [data, setData] = useState([]);
   const [tipo, setTipo] = useState("robots"); // Estado inicial
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   // 🔄 Efecto para cargar datos cuando cambia el tipo
   useEffect(() => {
     fetchRanking(tipo);
+  }, [tipo]);
+
+  useEffect(() => {
+    setPage(1);
   }, [tipo]);
 
   const fetchRanking = async (selectedTipo) => {
@@ -34,6 +41,9 @@ export default function Rankings() {
     if (tipo === "competidores") return "Ranking de Competidores";
     return "Ranking de Robots";
   };
+
+  const totalPages = Math.max(1, Math.ceil(data.length / itemsPerPage));
+  const dataPaginada = data.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   return (
     <>
@@ -111,13 +121,15 @@ export default function Rankings() {
                     </td>
                   </tr>
                 ) : data.length > 0 ? (
-                  data.map((item, index) => (
-                    <tr key={index} className={index < 3 ? "fw-semibold" : ""}>
+                  dataPaginada.map((item, index) => {
+                    const globalIndex = (page - 1) * itemsPerPage + index;
+                    return (
+                    <tr key={globalIndex} className={globalIndex < 3 ? "fw-semibold" : ""}>
                       <td className="px-4 py-3">
-                        {index === 0 && <FaMedal className="text-warning fs-4" />}
-                        {index === 1 && <FaMedal className="text-secondary fs-4" />}
-                        {index === 2 && <FaMedal className="text-danger fs-4" />} {/* Bronce */}
-                        {index > 2 && <span className="text-muted fw-bold ps-2">{index + 1}</span>}
+                        {globalIndex === 0 && <FaMedal className="text-warning fs-4" />}
+                        {globalIndex === 1 && <FaMedal className="text-secondary fs-4" />}
+                        {globalIndex === 2 && <FaMedal className="text-danger fs-4" />} {/* Bronce */}
+                        {globalIndex > 2 && <span className="text-muted fw-bold ps-2">{globalIndex + 1}</span>}
                       </td>
                       
                       <td>
@@ -148,7 +160,7 @@ export default function Rankings() {
                         {item.derrotas}
                       </td>
                     </tr>
-                  ))
+                  )})
                 ) : (
                   <tr>
                     <td colSpan="6" className="text-center py-5 text-muted">
@@ -160,6 +172,10 @@ export default function Rankings() {
             </table>
           </div>
         </div>
+
+        {!loading && data.length > 0 && (
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        )}
 
       </div>
       <Footer />

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_ORIGIN } from "../../services/config";
 import Swal from "sweetalert2";
 import { FaPlus, FaSearch, FaEdit, FaTrash, FaMapMarkerAlt, FaImage, FaLandmark } from "react-icons/fa";
 import api from "../../services/axiosConfig"; // Asegúrate de que apunte a tu config
@@ -75,7 +76,7 @@ export default function AdminColiseos() {
     setEditingId(c.idColiseo);
     setImagenFile(null);
     // Mostrar imagen existente si la hay
-    setImagenPreview(c.imagenUrl ? `http://localhost:8080${c.imagenUrl}` : null); 
+    setImagenPreview(c.imagenUrl ? `${API_ORIGIN}${c.imagenUrl}` : null); 
     setModal(true);
   };
 
@@ -219,7 +220,7 @@ export default function AdminColiseos() {
                         <div style={{width: "60px", height: "60px", overflow: "hidden", borderRadius: "8px"}} className="bg-light border d-flex align-items-center justify-content-center">
                           {c.imagenUrl ? (
                             <img 
-                              src={`http://localhost:8080${c.imagenUrl}`} 
+                              src={`${API_ORIGIN}${c.imagenUrl}`} 
                               alt="Coliseo" 
                               style={{width: "100%", height: "100%", objectFit: "cover"}}
                               onError={(e) => { e.target.onerror = null; e.target.src = ""; }} // Fallback si falla la carga

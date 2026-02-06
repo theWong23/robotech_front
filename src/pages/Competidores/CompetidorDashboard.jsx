@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom"; // 1. IMPORTAR useNavigate
 import api from "../../services/axiosConfig";
+import { API_ORIGIN } from "../../services/config";
 import Swal from "sweetalert2";
 import "../../styles/CompetidorDashboard.css";
 
@@ -337,7 +338,7 @@ export default function CompetidorDashboard() {
           <img
             src={
               competidor.fotoUrl
-                ? `http://localhost:8080${competidor.fotoUrl}`
+                ? `${API_ORIGIN}${competidor.fotoUrl}`
                 : "/default-user.png"
             }
             className="perfil-avatar"

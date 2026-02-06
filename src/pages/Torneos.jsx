@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/axiosConfig";
 import { FaTrophy, FaMedal, FaAward, FaCalendarAlt, FaInfoCircle, FaGamepad } from "react-icons/fa";
+import Pagination from "../components/Pagination";
 
 export default function Torneos() {
   const [torneos, setTorneos] = useState([]);
@@ -14,6 +15,8 @@ export default function Torneos() {
   const [torneoSeleccionado, setTorneoSeleccionado] = useState(null);
   const [categorias, setCategorias] = useState([]);
   const [loadingCategorias, setLoadingCategorias] = useState(false);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 9;
   const roles = (() => {
     try { return JSON.parse(localStorage.getItem("roles") || "[]"); } catch { return []; }
   })();
@@ -81,6 +84,16 @@ export default function Torneos() {
     return coincideBusqueda && coincideEstado;
   });
 
+  useEffect(() => {
+    setPage(1);
+  }, [busqueda, filtroEstado, torneos.length]);
+
+  const totalPages = Math.max(1, Math.ceil(torneosFiltrados.length / itemsPerPage));
+  const torneosPaginados = torneosFiltrados.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+
   return (
     <>
       <Navbar />
@@ -109,7 +122,7 @@ export default function Torneos() {
           <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
         ) : (
           <div className="row g-4">
-            {torneosFiltrados.map((t) => (
+            {torneosPaginados.map((t) => (
               <div key={t.idTorneo} className="col-12 col-sm-6 col-md-4">
                 <div className={`card torneo-card shadow-sm h-100 ${t.estado === 'FINALIZADO' ? 'border-warning shadow' : ''}`}>
                   <div className="card-body d-flex flex-column">
@@ -140,6 +153,10 @@ export default function Torneos() {
               </div>
             ))}
           </div>
+        )}
+
+        {!loading && (
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         )}
       </div>
 

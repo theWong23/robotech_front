@@ -1,7 +1,9 @@
 import { useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../services/config";
 import Swal from "sweetalert2";
 import { consultarDni } from "../services/dniService";
+import Navbar from "../components/Navbar";
 
 export default function Register() {
 
@@ -139,7 +141,7 @@ export default function Register() {
 
     try {
       // Ajusta esta URL si tu endpoint de códigos es diferente
-      const res = await axios.get(`http://localhost:8080/api/codigos/validar/${codigo}`);
+      const res = await axios.get(`${API_BASE_URL}/codigos/validar/${codigo}`);
 
       Swal.fire({
         icon: "success",
@@ -197,7 +199,7 @@ export default function Register() {
       console.log("Enviando payload:", payload);
 
       // Enviamos a la ruta del UsuarioController
-      await axios.post("http://localhost:8080/api/usuarios", payload);
+      await axios.post(`${API_BASE_URL}/usuarios`, payload);
 
       Swal.fire({
         icon: "success",
@@ -222,20 +224,39 @@ export default function Register() {
     }
   };
 
+  const heroStyle = {
+    minHeight: "calc(100vh - 72px)",
+    background:
+      "linear-gradient(135deg, rgba(0,179,179,0.12), rgba(0,179,179,0.04))",
+  };
+
+  const cardStyle = {
+    borderRadius: "20px",
+    border: "1px solid rgba(0,0,0,0.06)",
+    boxShadow: "0 20px 45px rgba(0,0,0,0.12)",
+  };
+
   return (
-    <div className="container mt-5">
+    <>
+      <Navbar />
 
-      <nav className="navbar navbar-expand-lg" style={{ backgroundColor: "#00b3b3" }}>
+      <div className="container-fluid py-5" style={heroStyle}>
         <div className="container">
-          <a className="navbar-brand" href="/">
-            <img src="/img/logo.jpg" alt="Logo" height="50" />
-          </a>
-        </div>
-      </nav>
-
-      <div className="card shadow p-4 mx-auto" style={{ maxWidth: "550px" }}>
-
-        <h2 className="text-center text-primary fw-bold">Registro de Competidor</h2>
+          <div className="row justify-content-center">
+            <div className="col-lg-7 col-xl-6">
+              <div className="card p-4 p-lg-5" style={cardStyle}>
+                <div className="text-center mb-4">
+                  <img
+                    src="/img/logo.jpg"
+                    alt="Logo Robotech"
+                    className="rounded shadow-sm mb-3"
+                    style={{ width: "72px", height: "72px", objectFit: "cover" }}
+                  />
+                  <h2 className="text-center text-primary fw-bold mb-1">Registro de Competidor</h2>
+                  <p className="text-muted mb-0">
+                    Completa tus datos para unirte a tu club.
+                  </p>
+                </div>
 
         {/* PASO 1: VALIDAR CÓDIGO */}
         {!codigoValido && (
@@ -375,8 +396,11 @@ export default function Register() {
           </form>
         )}
 
-
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -4,6 +4,7 @@ import "../styles/competidores.css";
 import { useState, useEffect } from "react";
 import api from "../services/axiosConfig";
 import { FaShieldAlt, FaRobot, FaSearch, FaTimes, FaUser, FaIdCard } from "react-icons/fa";
+import Pagination from "../components/Pagination";
 
 export default function Competidores() {
   const [competidores, setCompetidores] = useState([]);
@@ -12,6 +13,8 @@ export default function Competidores() {
 
   const [showModal, setShowModal] = useState(false);
   const [selectedComp, setSelectedComp] = useState(null);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 9;
 
   useEffect(() => {
     setLoading(true);
@@ -52,6 +55,16 @@ export default function Competidores() {
     c.club?.toLowerCase().includes(busqueda.toLowerCase())
   );
 
+  useEffect(() => {
+    setPage(1);
+  }, [busqueda, competidores.length]);
+
+  const totalPages = Math.max(1, Math.ceil(competidoresFiltrados.length / itemsPerPage));
+  const competidoresPaginados = competidoresFiltrados.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+
   return (
     <>
       <Navbar />
@@ -81,7 +94,7 @@ export default function Competidores() {
            <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
         ) : (
           <div className="row g-4">
-            {competidoresFiltrados.map((c, index) => (
+            {competidoresPaginados.map((c, index) => (
               <div className="col-12 col-sm-6 col-lg-4" key={index}>
                 <div 
                   className="card h-100 shadow-sm border-0 robot-card-modern overflow-hidden" 
@@ -139,6 +152,10 @@ export default function Competidores() {
               </div>
             ))}
           </div>
+        )}
+
+        {!loading && competidoresFiltrados.length > 0 && (
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         )}
 
         {/* --- MODAL MANUAL --- */}

@@ -2,8 +2,10 @@ import { useState, useContext } from "react";
 // 1. Agregamos 'Link' a la importación
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL } from "../services/config";
 import Swal from "sweetalert2";
 import AuthContext from "../context/AuthContext";
+import Navbar from "../components/Navbar";
 
 export default function Login() {
   const { login } = useContext(AuthContext);
@@ -24,7 +26,7 @@ export default function Login() {
 
     try {
       const { data } = await axios.post(
-        "http://localhost:8080/api/auth/login",
+        `${API_BASE_URL}/auth/login`,
         { correo, contrasena }
       );
 
@@ -89,77 +91,103 @@ export default function Login() {
     }
   };
 
+  const heroStyle = {
+    minHeight: "calc(100vh - 72px)",
+    background:
+      "linear-gradient(135deg, rgba(0,179,179,0.12), rgba(0,179,179,0.04))",
+  };
+
+  const panelStyle = {
+    backgroundImage: "linear-gradient(135deg, rgba(0,179,179,0.9), rgba(1,82,104,0.95)), url('/img/robots.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    color: "#fff",
+    borderRadius: "20px",
+  };
+
+  const cardStyle = {
+    borderRadius: "20px",
+    border: "1px solid rgba(0,0,0,0.06)",
+    boxShadow: "0 20px 45px rgba(0,0,0,0.12)",
+  };
+
   return (
     <>
-      {/* NAVBAR */}
-      <nav className="navbar navbar-expand-lg" style={{ backgroundColor: "#00b3b3" }}>
+      <Navbar />
+
+      <div className="container-fluid py-5" style={heroStyle}>
         <div className="container">
-          <Link className="navbar-brand" to="/">
-            <img src="/img/logo.jpg" alt="Logo" height="50" />
-          </Link>
-        </div>
-      </nav>
+          <div className="row g-4 align-items-stretch">
+            <div className="col-lg-6">
+              <div className="p-4 p-lg-5 h-100" style={panelStyle}>
+                <div className="d-flex align-items-center gap-3 mb-4">
+                  <img
+                    src="/img/logo.jpg"
+                    alt="Logo Robotech"
+                    className="rounded shadow"
+                    style={{ width: "72px", height: "72px", objectFit: "cover" }}
+                  />
+                  <div>
+                    <h2 className="fw-bold mb-1">Robotech League</h2>
+                    <p className="mb-0 opacity-75">Acceso para Club, Competidor y Juez</p>
+                  </div>
+                </div>
 
-      {/* LOGIN */}
-      <div className="container my-5">
-        <div className="row justify-content-center align-items-center">
-          <div className="col-md-4 d-flex justify-content-center">
-            <img
-              src="/img/logo.jpg"
-              alt="Logo Robotech"
-              className="img-fluid"
-              style={{ maxWidth: "260px" }}
-            />
-          </div>
-
-          <div className="col-md-5">
-            <h3 className="fw-bold text-primary mb-4">
-              Iniciar sesión
-            </h3>
-
-            <form onSubmit={handleSubmit}>
-              <div className="mb-3">
-                <input
-                  type="email"
-                  className="form-control"
-                  placeholder="Correo"
-                  value={correo}
-                  onChange={(e) => setCorreo(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="mb-3">
-                <input
-                  type="password"
-                  className="form-control"
-                  placeholder="Contraseña"
-                  value={contrasena}
-                  onChange={(e) => setContrasena(e.target.value)}
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary w-100 mb-3"
-              >
-                Ingresar
-              </button>
-
-              <div className="text-center">
-                <Link to="/request-password-reset" className="small text-muted d-block mb-2">
-                  ¿Olvidaste tu contraseña?
-                </Link>
-                <p className="small mb-0">
-                  ¿No tienes cuenta?{" "}
-                  {/* 2. Aquí cambiamos el <a> por <Link> */}
-                  <Link to="/register" className="text-primary fw-bold">
-                    Regístrate
-                  </Link>
+                <p className="lead mb-0">
+                  Entra con tu cuenta para gestionar tu participación en la liga.
                 </p>
               </div>
-            </form>
+            </div>
+
+            <div className="col-lg-6">
+              <div className="card p-4 p-lg-5 h-100" style={cardStyle}>
+                <div className="mb-4">
+                  <h3 className="fw-bold mb-1 text-primary">Iniciar sesión</h3>
+                  <p className="text-muted mb-0">
+                    Usa tu correo y contraseña para continuar.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubmit}>
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Correo</label>
+                    <input
+                      type="email"
+                      className="form-control form-control-lg"
+                      placeholder="tucorreo@ejemplo.com"
+                      value={correo}
+                      onChange={(e) => setCorreo(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Contraseña</label>
+                    <input
+                      type="password"
+                      className="form-control form-control-lg"
+                      placeholder="••••••••"
+                      value={contrasena}
+                      onChange={(e) => setContrasena(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <button type="submit" className="btn btn-primary btn-lg w-100 mb-3">
+                    Ingresar
+                  </button>
+
+                  <div className="d-flex justify-content-between align-items-center">
+                    <Link to="/request-password-reset" className="small text-muted">
+                      ¿Olvidaste tu contraseña?
+                    </Link>
+                    <Link to="/register" className="small fw-bold text-primary">
+                      Crear cuenta
+                    </Link>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
       </div>

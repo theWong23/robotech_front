@@ -9,7 +9,7 @@ export default function ClubCategoriasTorneo() {
 
   useEffect(() => {
     api
-      .get(`http://localhost:8080/api/admin/torneos/${idTorneo}/categorias`)
+      .get(`/admin/torneos/${idTorneo}/categorias`)
       .then((res) => setCategorias(res.data))
       .catch(() => alert("Error cargando categorías"));
   }, [idTorneo]);

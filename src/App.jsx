@@ -31,6 +31,8 @@ import AdminRobots from "./pages/admin/AdminRobots";
 import AdminInscripcion from "./pages/admin/AdminInscripcion";
 import AdminSubAdministradores from "./pages/admin/AdminSubAdministradores";
 import AdminTransferenciasPropietario from "./pages/admin/AdminTransferenciasPropietario";
+import AdminRoute from "./components/AdminRoute";
+import SubAdminRoute from "./components/SubAdminRoute";
 
 // ===== SUBADMIN =====
 import SubAdminPanel from "./pages/subadmin/SubAdminPanel";
@@ -92,7 +94,14 @@ function App() {
         />
 
         {/* ================= ADMIN ================= */}
-        <Route path="/admin" element={<AdminPanel />}>
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminPanel />
+            </AdminRoute>
+          }
+        >
           <Route index element={<Navigate to="dashboard" />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="usuarios" element={<AdminUsuarios />} />
@@ -116,7 +125,14 @@ function App() {
         </Route>
 
         {/* ================= SUBADMIN ================= */}
-        <Route path="/subadmin" element={<SubAdminPanel />}>
+        <Route
+          path="/subadmin"
+          element={
+            <SubAdminRoute>
+              <SubAdminPanel />
+            </SubAdminRoute>
+          }
+        >
           <Route index element={<Navigate to="dashboard" />} />
           <Route path="dashboard" element={<SubAdminDashboard />} />
 

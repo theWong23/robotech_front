@@ -4,11 +4,14 @@ import "../styles/robots.css";
 import { useState, useEffect } from "react";
 import api from "../services/axiosConfig";
 import { FaUser, FaShieldAlt, FaRobot, FaSearch } from "react-icons/fa";
+import Pagination from "../components/Pagination";
 
 export default function Robots() {
   const [robots, setRobots] = useState([]);
   const [busqueda, setBusqueda] = useState(""); // Estado para la búsqueda
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 9;
 
   useEffect(() => {
     setLoading(true);
@@ -71,7 +74,7 @@ export default function Robots() {
         ) : (
           <div className="row g-4">
             {robotsFiltrados.length > 0 ? (
-              robotsFiltrados.map((r) => (
+              robotsPaginados.map((r) => (
                 <div key={r.idRobot} className="col-12 col-sm-6 col-lg-4">
                   <div className="card h-100 shadow-sm border-0 robot-card-modern overflow-hidden">
                     
@@ -135,6 +138,10 @@ export default function Robots() {
               </div>
             )}
           </div>
+        )}
+
+        {!loading && robotsFiltrados.length > 0 && (
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         )}
       </div>
       <Footer />

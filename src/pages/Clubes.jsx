@@ -13,6 +13,7 @@ import {
   FaMapMarkerAlt, 
   FaEnvelope 
 } from "react-icons/fa";
+import Pagination from "../components/Pagination";
 
 export default function Clubes() {
   const [clubes, setClubes] = useState([]);
@@ -20,6 +21,8 @@ export default function Clubes() {
   const [showModal, setShowModal] = useState(false);
   const [clubSeleccionado, setClubSeleccionado] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 9;
 
   useEffect(() => {
     setLoading(true);
@@ -60,6 +63,16 @@ export default function Clubes() {
     club.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
 
+  useEffect(() => {
+    setPage(1);
+  }, [busqueda, clubes.length]);
+
+  const totalPages = Math.max(1, Math.ceil(clubesFiltrados.length / itemsPerPage));
+  const clubesPaginados = clubesFiltrados.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+
   return (
     <>
       <Navbar />
@@ -97,7 +110,7 @@ export default function Clubes() {
                 <h4>No se encontraron clubes registrados</h4>
               </div>
             ) : (
-              clubesFiltrados.map((club) => (
+              clubesPaginados.map((club) => (
                 <div key={club.idClub} className="col-12 col-sm-6 col-lg-4">
                   <div 
                     className="card h-100 shadow-sm border-0 robot-card-modern overflow-hidden" 
@@ -160,6 +173,10 @@ export default function Clubes() {
               )
             ))}
           </div>
+        )}
+
+        {!loading && clubesFiltrados.length > 0 && (
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         )}
 
         {/* --- MODAL MANUAL --- */}

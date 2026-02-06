@@ -35,11 +35,11 @@ export default function AdminCategoriasTorneo() {
   const cargar = async () => {
     try {
       const torneoRes = await api.get(
-        `http://localhost:8080/api/admin/torneos/${idTorneo}`
+        `/admin/torneos/${idTorneo}`
       );
 
       const categoriasRes = await api.get(
-        `http://localhost:8080/api/admin/categorias-torneo/${idTorneo}`
+        `/admin/categorias-torneo/${idTorneo}`
       );
 
       setTorneo(torneoRes.data);
@@ -103,13 +103,13 @@ export default function AdminCategoriasTorneo() {
 
       if (!editingId) {
         await api.post(
-          `http://localhost:8080/api/admin/categorias-torneo/${idTorneo}`,
+          `/admin/categorias-torneo/${idTorneo}`,
           payload
         );
         Swal.fire("✔ Categoría creada", "", "success");
       } else {
         await api.put(
-          `http://localhost:8080/api/admin/categorias-torneo/${editingId}`,
+          `/admin/categorias-torneo/${editingId}`,
           payload
         );
         Swal.fire("✔ Categoría actualizada", "", "success");
@@ -138,7 +138,7 @@ export default function AdminCategoriasTorneo() {
 
     try {
       const res = await api.delete(
-        `http://localhost:8080/api/admin/categorias-torneo/${id}`
+        `/admin/categorias-torneo/${id}`
       );
       const msg = typeof res?.data === "string" ? res.data : "Categoría eliminada";
       Swal.fire("Eliminado", msg, "success");
