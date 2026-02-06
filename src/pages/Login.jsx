@@ -30,10 +30,20 @@ export default function Login() {
 
       Swal.close();
 
-      const { token, rol, entidad } = data;
+      const { token, roles, entidad } = data;
+
+      const rolesArray = Array.isArray(roles) ? roles : (data.rol ? [data.rol] : []);
+
+      const rolSeleccionado =
+        rolesArray.includes("CLUB") ? "CLUB" :
+        rolesArray.includes("JUEZ") ? "JUEZ" :
+        rolesArray.includes("COMPETIDOR") ? "COMPETIDOR" :
+        rolesArray.includes("ADMINISTRADOR") ? "ADMINISTRADOR" :
+        rolesArray.includes("SUBADMINISTRADOR") ? "SUBADMINISTRADOR" :
+        "";
 
       // Bloquear administradores
-      if (rol === "ADMINISTRADOR" || rol === "SUBADMINISTRADOR") {
+      if (rolSeleccionado === "ADMINISTRADOR" || rolSeleccionado === "SUBADMINISTRADOR") {
         await Swal.fire({
           icon: "warning",
           title: "Acceso no permitido",
@@ -45,14 +55,15 @@ export default function Login() {
       // Guardar sesión
       login({
         token,
-        rol,
+        roles: rolesArray,
         usuario: entidad,
+        entidad,
       });
 
       await Swal.fire({
         icon: "success",
         title: "Bienvenido",
-        text: `Rol detectado correctamente: ${rol}`,
+        text: `Rol detectado correctamente: ${rolSeleccionado || "SIN_ROL"}`,
       });
 
       const rutasPorRol = {
@@ -62,7 +73,7 @@ export default function Login() {
         CLUB_COMPETIDOR: "/club",
       };
 
-      navigate(rutasPorRol[rol] || "/");
+      navigate(rutasPorRol[rolSeleccionado] || "/");
 
     } catch (error) {
       Swal.close();

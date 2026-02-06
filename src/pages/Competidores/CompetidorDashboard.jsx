@@ -77,8 +77,13 @@ export default function CompetidorDashboard() {
   };
 
   useEffect(() => {
-    cargarSolicitudes();
-  }, []);
+    if (!competidor) return;
+    if (esAgenteLibre) {
+      cargarSolicitudes();
+    } else {
+      setMisSolicitudes([]);
+    }
+  }, [competidor]);
 
   const solicitarClub = async () => {
     if (!codigoClub.trim()) {
@@ -296,6 +301,12 @@ export default function CompetidorDashboard() {
 
   if (!competidor) return <p>Cargando perfil...</p>;
 
+  const rolesStorage = localStorage.getItem("roles");
+  let roles = [];
+  try { roles = rolesStorage ? JSON.parse(rolesStorage) : []; } catch { roles = []; }
+
+  const esAgenteLibre = roles.includes("COMPETIDOR") && roles.includes("JUEZ");
+
   const formularioValido =
     !errores.nombres && !errores.apellidos && !errores.telefono && !errores.dni && !errores.correo &&
     form.nombres && form.apellidos && form.telefono && form.dni && form.correo;
@@ -492,50 +503,52 @@ export default function CompetidorDashboard() {
         )}
       </div>
 
-      <div className="card shadow-sm border-0 mt-4">
-        <div className="card-body">
-          <h5 className="fw-bold mb-2">Unirme a un Club</h5>
-          <p className="text-muted">Ingresa el c?digo de un club para solicitar ingreso.</p>
-          <div className="d-flex flex-column flex-md-row gap-2 mb-3">
-            <input
-              className="form-control"
-              placeholder="C?digo del club"
-              value={codigoClub}
-              onChange={(e) => setCodigoClub(e.target.value)}
-            />
-            <button className="btn btn-primary" onClick={solicitarClub}>
-              Enviar solicitud
-            </button>
-          </div>
-
-          <h6 className="fw-bold mb-2">Mis solicitudes</h6>
-          {loadingSolicitudes ? (
-            <div className="text-muted">Cargando...</div>
-          ) : misSolicitudes.length === 0 ? (
-            <div className="text-muted">No tienes solicitudes.</div>
-          ) : (
-            <div className="list-group">
-              {misSolicitudes.map((s) => (
-                <div key={s.idSolicitud} className="list-group-item d-flex justify-content-between align-items-center">
-                  <div>
-                    <div className="fw-bold">{s.nombreClub}</div>
-                    <div className="small text-muted">Estado: {s.estado}</div>
-                  </div>
-                  {s.estado === "PENDIENTE" && (
-                    <button className="btn btn-outline-danger btn-sm" onClick={() => cancelarSolicitud(s.idSolicitud)}>
-                      Cancelar
-                    </button>
-                  )}
-                </div>
-              ))}
+      {esAgenteLibre && (
+        <div className="card shadow-sm border-0 mt-4">
+          <div className="card-body">
+            <h5 className="fw-bold mb-2">Unirme a un Club</h5>
+            <p className="text-muted">Ingresa el c?digo de un club para solicitar ingreso.</p>
+            <div className="d-flex flex-column flex-md-row gap-2 mb-3">
+              <input
+                className="form-control"
+                placeholder="C?digo del club"
+                value={codigoClub}
+                onChange={(e) => setCodigoClub(e.target.value)}
+              />
+              <button className="btn btn-primary" onClick={solicitarClub}>
+                Enviar solicitud
+              </button>
             </div>
-          )}
+
+            <h6 className="fw-bold mb-2">Mis solicitudes</h6>
+            {loadingSolicitudes ? (
+              <div className="text-muted">Cargando...</div>
+            ) : misSolicitudes.length === 0 ? (
+              <div className="text-muted">No tienes solicitudes.</div>
+            ) : (
+              <div className="list-group">
+                {misSolicitudes.map((s) => (
+                  <div key={s.idSolicitud} className="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                      <div className="fw-bold">{s.nombreClub}</div>
+                      <div className="small text-muted">Estado: {s.estado}</div>
+                    </div>
+                    {s.estado === "PENDIENTE" && (
+                      <button className="btn btn-outline-danger btn-sm" onClick={() => cancelarSolicitud(s.idSolicitud)}>
+                        Cancelar
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="card shadow-sm border-0 mt-4">
         <div className="card-body">
-          <h5 className="fw-bold mb-2">Postulaci?n a Juez</h5>
+          <h5 className="fw-bold mb-2">Postulación a Juez</h5>
           {loadingJuez ? (
             <div className="text-muted">Cargando estado...</div>
           ) : juezEstado && juezEstado.estado !== "RECHAZADO" ? (
@@ -545,7 +558,7 @@ export default function CompetidorDashboard() {
           ) : (
             <>
               <p className="text-muted">
-                Si te aprueban como juez, pasar?s a ser agente libre y solo podr?s competir en individuales.
+                Si te aprueban como juez, pasarás a ser agente libre y solo podrás competir en individuales.
               </p>
               <div className="d-flex flex-column flex-md-row gap-2">
                 <input
@@ -563,11 +576,6 @@ export default function CompetidorDashboard() {
         </div>
       </div>
 
-      <style>{`
-        .competidor-welcome {
-          background: linear-gradient(135deg, #0ea5e9, #22c55e);
-        }
-      `}</style>
     </div>
   );
 }
