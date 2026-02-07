@@ -42,70 +42,80 @@ const ResetPassword = () => {
         }
     };
 
+    const heroStyle = {
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, rgba(0,179,179,0.22), rgba(1,82,104,0.12))",
+    };
+
+    const cardStyle = {
+        borderRadius: "20px",
+        border: "1px solid rgba(0,0,0,0.06)",
+        boxShadow: "0 20px 45px rgba(0,0,0,0.12)",
+        backgroundColor: "rgba(255, 255, 255, 0.96)",
+    };
+
     return (
         <>
-            <nav className="navbar navbar-expand-lg" style={{ backgroundColor: "#00b3b3" }}>
+            <div className="container-fluid py-5 reset-password-page d-flex align-items-center" style={heroStyle}>
                 <div className="container">
-                    <Link className="navbar-brand" to="/">
-                        <img src="/img/logo.jpg" alt="Logo" height="50" />
-                    </Link>
-                </div>
-            </nav>
-
-            <div className="container my-5 reset-password-page">
-                <div className="row justify-content-center align-items-center">
-                    <div className="col-md-4 d-flex justify-content-center mb-4 mb-md-0">
-                        <img
-                            src="/img/logo.jpg"
-                            alt="Logo Robotech"
-                            className="img-fluid"
-                            style={{ maxWidth: "240px" }}
-                        />
-                    </div>
-
-                    <div className="col-md-6 col-lg-5">
-                        <div className="card shadow p-4">
-                            <h3 className="fw-bold text-primary mb-2">Restablecer contraseña</h3>
-                            <p className="text-muted mb-4">
-                                Ingresa tu nueva contraseña. Te recomendamos usar al menos 8 caracteres.
-                            </p>
-
-                            <form onSubmit={handleSubmit}>
-                                <div className="mb-3">
-                                    <label htmlFor="password" className="form-label">Nueva contraseña</label>
-                                    <input
-                                        type="password"
-                                        id="password"
-                                        className="form-control"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                        minLength="8"
-                                    />
+                    <div className="row justify-content-center">
+                        <div className="col-12 col-md-9 col-lg-6">
+                            <div className="card p-4 p-lg-5" style={cardStyle}>
+                                <div className="mb-4">
+                                    <div className="d-flex align-items-center gap-3 mb-3">
+                                        <img
+                                            src="/img/logo.jpg"
+                                            alt="Logo Robotech"
+                                            className="rounded shadow"
+                                            style={{ width: "64px", height: "64px", objectFit: "cover" }}
+                                        />
+                                        <div>
+                                            <h3 className="fw-bold text-primary mb-1">Restablecer contraseña</h3>
+                                            <p className="text-muted mb-0">Configura una nueva contraseña segura</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-muted mb-0">
+                                        Ingresa tu nueva contraseña. Te recomendamos usar al menos 8 caracteres.
+                                    </p>
                                 </div>
-                                <div className="mb-3">
-                                    <label htmlFor="confirmPassword" className="form-label">Confirmar contraseña</label>
-                                    <input
-                                        type="password"
-                                        id="confirmPassword"
-                                        className="form-control"
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        required
-                                    />
+
+                                <form onSubmit={handleSubmit}>
+                                    <div className="mb-3">
+                                        <label htmlFor="password" className="form-label fw-semibold">Nueva contraseña</label>
+                                        <input
+                                            type="password"
+                                            id="password"
+                                            className="form-control form-control-lg"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            required
+                                            minLength="8"
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label htmlFor="confirmPassword" className="form-label fw-semibold">Confirmar contraseña</label>
+                                        <input
+                                            type="password"
+                                            id="confirmPassword"
+                                            className="form-control form-control-lg"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                    <button type="submit" className="btn btn-primary btn-lg w-100" disabled={loading}>
+                                        {loading ? 'Restableciendo...' : 'Restablecer contraseña'}
+                                    </button>
+                                </form>
+
+                                {message && <div className="alert alert-success mt-3 mb-0">{message}</div>}
+                                {error && <div className="alert alert-danger mt-3 mb-0">{error}</div>}
+
+                                <div className="text-center mt-3">
+                                    <Link to="/login" className="small text-muted">
+                                        Volver a iniciar sesión
+                                    </Link>
                                 </div>
-                                <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-                                    {loading ? 'Restableciendo...' : 'Restablecer contraseña'}
-                                </button>
-                            </form>
-
-                            {message && <div className="alert alert-success mt-3 mb-0">{message}</div>}
-                            {error && <div className="alert alert-danger mt-3 mb-0">{error}</div>}
-
-                            <div className="text-center mt-3">
-                                <Link to="/login" className="small text-muted">
-                                    Volver a iniciar sesión
-                                </Link>
                             </div>
                         </div>
                     </div>
