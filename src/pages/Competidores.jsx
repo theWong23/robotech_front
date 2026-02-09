@@ -10,19 +10,33 @@ export default function Competidores() {
   const [competidores, setCompetidores] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [loading, setLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [showModal, setShowModal] = useState(false);
   const [selectedComp, setSelectedComp] = useState(null);
   const [page, setPage] = useState(1);
-  const itemsPerPage = 9;
+  const itemsPerPage = 12;
 
   useEffect(() => {
-    setLoading(true);
-    api.get("public/competidores")
-      .then((res) => setCompetidores(res.data))
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
-  }, []);
+    const handler = setTimeout(() => {
+      setLoading(true);
+      api.get("public/competidores", {
+        params: {
+          page: page - 1,
+          size: itemsPerPage,
+          q: busqueda?.trim() || undefined,
+        },
+      })
+        .then((res) => {
+          setCompetidores(res.data?.content || []);
+          setTotalPages(res.data?.totalPages || 1);
+        })
+        .catch((err) => console.error(err))
+        .finally(() => setLoading(false));
+    }, 250);
+
+    return () => clearTimeout(handler);
+  }, [page, busqueda]);
 
   const getInitials = (name) => {
     if (!name) return "CP";
@@ -50,20 +64,9 @@ export default function Competidores() {
     document.body.style.overflow = 'unset';
   };
 
-  const competidoresFiltrados = competidores.filter(c => 
-    c.nombreCompleto?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    c.club?.toLowerCase().includes(busqueda.toLowerCase())
-  );
-
   useEffect(() => {
     setPage(1);
-  }, [busqueda, competidores.length]);
-
-  const totalPages = Math.max(1, Math.ceil(competidoresFiltrados.length / itemsPerPage));
-  const competidoresPaginados = competidoresFiltrados.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
+  }, [busqueda]);
 
   return (
     <>
@@ -93,14 +96,20 @@ export default function Competidores() {
         {loading ? (
            <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
         ) : (
-          <div className="row g-4">
-            {competidoresPaginados.map((c, index) => (
-              <div className="col-12 col-sm-6 col-lg-4" key={index}>
-                <div 
-                  className="card h-100 shadow-sm border-0 robot-card-modern overflow-hidden" 
-                  onClick={() => handleOpenModal(c)}
-                  style={{ cursor: 'pointer' }}
-                >
+          <>
+            {competidores.length === 0 ? (
+              <div className="text-center text-muted py-5">
+                No se encontraron competidores.
+              </div>
+            ) : (
+              <div className="row g-4">
+                {competidores.map((c, index) => (
+                  <div className="col-12 col-sm-6 col-lg-4" key={index}>
+                    <div 
+                      className="card h-100 shadow-sm border-0 robot-card-modern overflow-hidden" 
+                      onClick={() => handleOpenModal(c)}
+                      style={{ cursor: 'pointer' }}
+                    >
                   {/* Banner de Identidad */}
                   <div 
                     className="d-flex align-items-center justify-content-center text-white position-relative"
@@ -148,13 +157,15 @@ export default function Competidores() {
                         </div>
                     </div>
                   </div>
-                </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
 
-        {!loading && competidoresFiltrados.length > 0 && (
+        {!loading && competidores.length > 0 && (
           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         )}
 
