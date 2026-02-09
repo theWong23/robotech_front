@@ -198,8 +198,16 @@ export default function Register() {
       
       console.log("Enviando payload:", payload);
 
-      // Enviamos a la ruta del UsuarioController
-      await axios.post(`${API_BASE_URL}/usuarios`, payload);
+      // Enviamos al endpoint pÃºblico de registro de competidor
+      await axios.post(`${API_BASE_URL}/auth/registro/competidor`, {
+        dni: payload.dni,
+        nombre: payload.nombres,
+        apellido: payload.apellidos,
+        correo: payload.correo,
+        telefono: payload.telefono,
+        contrasena: payload.contrasena,
+        codigoClub: payload.codigoClub,
+      });
 
       Swal.fire({
         icon: "success",
