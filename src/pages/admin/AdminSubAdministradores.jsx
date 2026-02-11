@@ -1,19 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import api from "../../services/axiosConfig";
-import { FaPlus, FaPowerOff, FaEdit } from "react-icons/fa";
+import { FaPlus, FaPowerOff, FaEdit, FaUserShield, FaSearch, FaEnvelope, FaPhone } from "react-icons/fa";
 import { consultarDni } from "../../services/dniService";
 
-
 export default function SubAdministradores() {
-
   const [subadmins, setSubadmins] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editando, setEditando] = useState(null);
+  const [busqueda, setBusqueda] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalSubadmins, setTotalSubadmins] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const initialForm = {
     dni: "",
@@ -26,12 +26,24 @@ export default function SubAdministradores() {
 
   const [form, setForm] = useState(initialForm);
 
-  const setField = (k, v) =>
-    setForm(prev => ({ ...prev, [k]: v }));
+  const setField = (k, v) => setForm((prev) => ({ ...prev, [k]: v }));
+  const hasError = (field) => Boolean(fieldErrors[field]);
 
-  // =========================
-  // LISTAR
-  // =========================
+  const validarCorreo = (value) => {
+    if (!value?.trim()) return "El correo es obligatorio";
+    if (!/^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$/.test(value.trim())) {
+      return "Formato de correo inválido";
+    }
+    return null;
+  };
+
+  const handleFieldChange = (k, v) => {
+    setField(k, v);
+    if (k === "correo") {
+      setFieldErrors((prev) => ({ ...prev, correo: validarCorreo(v) }));
+    }
+  };
+
   const cargarSubadmins = async () => {
     setLoading(true);
     try {
@@ -51,8 +63,6 @@ export default function SubAdministradores() {
     }
   };
 
-  
-
   useEffect(() => {
     cargarSubadmins();
   }, [page]);
@@ -61,6 +71,18 @@ export default function SubAdministradores() {
     if (page > totalPages) setPage(totalPages || 1);
   }, [page, totalPages]);
 
+  const subadminsFiltrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    if (!q) return subadmins;
+
+    return subadmins.filter((s) => {
+      const nombreCompleto = `${s.nombres || ""} ${s.apellidos || ""}`.toLowerCase();
+      const correo = (s.correo || "").toLowerCase();
+      const estado = (s.estado || "").toLowerCase();
+      return nombreCompleto.includes(q) || correo.includes(q) || estado.includes(q);
+    });
+  }, [subadmins, busqueda]);
+
   const cargarPorDni = async () => {
     try {
       Swal.fire({
@@ -68,32 +90,33 @@ export default function SubAdministradores() {
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
       });
-  
+
       const data = await consultarDni(form.dni);
-  
-      setForm(prev => ({
+
+      setForm((prev) => ({
         ...prev,
         nombres: data.nombres,
         apellidos: data.apellidos
       }));
-  
+
       Swal.close();
     } catch (err) {
       Swal.fire("Error", err.message, "error");
     }
   };
 
-  
-
-  // =========================
-  // CREAR
-  // =========================
   const crearSubadmin = async () => {
     const required = ["dni", "nombres", "apellidos", "correo", "telefono", "contrasena"];
-    const vacios = required.filter(k => !form[k]);
+    const vacios = required.filter((k) => !form[k]);
 
     if (vacios.length) {
       return Swal.fire("Campos incompletos", "Completa todos los campos", "warning");
+    }
+
+    const correoError = validarCorreo(form.correo);
+    if (correoError) {
+      setFieldErrors((prev) => ({ ...prev, correo: correoError }));
+      return Swal.fire("Error", correoError, "warning");
     }
 
     try {
@@ -106,15 +129,19 @@ export default function SubAdministradores() {
     }
   };
 
-  // =========================
-  // EDITAR
-  // =========================
   const editarSubadmin = async () => {
+    const correoError = validarCorreo(form.correo);
+    if (correoError) {
+      setFieldErrors((prev) => ({ ...prev, correo: correoError }));
+      return Swal.fire("Error", correoError, "warning");
+    }
+
     try {
       await api.put(`/admin/subadmins/${editando.idSubadmin}`, {
         nombres: form.nombres,
         apellidos: form.apellidos,
-        telefono: form.telefono
+        telefono: form.telefono,
+        correo: form.correo
       });
 
       Swal.fire("Actualizado", "Subadministrador actualizado", "success");
@@ -125,9 +152,6 @@ export default function SubAdministradores() {
     }
   };
 
-  // =========================
-  // CAMBIAR ESTADO
-  // =========================
   const cambiarEstado = async (sub) => {
     const nuevoEstado = sub.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO";
 
@@ -141,169 +165,224 @@ export default function SubAdministradores() {
     if (!ok.isConfirmed) return;
 
     try {
-      await api.put(
-        `/admin/subadmins/${sub.idSubadmin}/estado`,
-        { estado: nuevoEstado }
-      );
+      await api.put(`/admin/subadmins/${sub.idSubadmin}/estado`, { estado: nuevoEstado });
       cargarSubadmins();
     } catch {
       Swal.fire("Error", "No se pudo cambiar el estado", "error");
     }
   };
 
+  const abrirEditar = (s) => {
+    setEditando(s);
+    setFieldErrors({});
+    setForm({
+      dni: s.dni || "",
+      correo: s.correo || "",
+      contrasena: "",
+      nombres: s.nombres,
+      apellidos: s.apellidos,
+      telefono: s.telefono || ""
+    });
+    setModalOpen(true);
+  };
+
+  const abrirCrear = () => {
+    setEditando(null);
+    setFieldErrors({});
+    setForm(initialForm);
+    setModalOpen(true);
+  };
+
   const cerrarModal = () => {
     setModalOpen(false);
     setEditando(null);
+    setFieldErrors({});
     setForm(initialForm);
   };
 
-  // =========================
-  // UI
-  // =========================
   return (
-    <div className="container-fluid px-4 mt-4">
+    <div className="container-fluid px-4 py-4">
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+        <div>
+          <h2 className="fw-bold mb-0 text-dark">
+            <FaUserShield className="me-2 text-primary" />
+            Gestión de Subadministradores
+          </h2>
+          <p className="text-muted mb-0">Administra cuentas subadmin y su estado de acceso.</p>
+        </div>
 
-      <div className="d-flex justify-content-between mb-3">
-        <h3>Gestión de Subadministradores</h3>
-        <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+        <button className="btn btn-primary d-flex align-items-center gap-2 shadow-sm" onClick={abrirCrear}>
           <FaPlus /> Nuevo Subadmin
         </button>
       </div>
 
-      <table className="table table-dark table-hover">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Correo</th>
-            <th>Teléfono</th>
-            <th>Estado</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr><td colSpan="5">Cargando...</td></tr>
-          ) : subadmins.map(s => (
-            <tr key={s.idSubadmin}>
-              <td>{s.nombres} {s.apellidos}</td>
-              <td>{s.correo}</td>
-              <td>{s.telefono || "—"}</td>
-              <td>
-                <span className={`badge ${s.estado === "ACTIVO" ? "bg-success" : "bg-danger"}`}>
-                  {s.estado}
-                </span>
-              </td>
-              <td className="d-flex gap-2">
-                <button
-                  className="btn btn-sm btn-outline-info"
-                  onClick={() => {
-                    setEditando(s);
-                    setForm({
-                      dni: "",
-                      correo: "",
-                      contrasena: "",
-                      nombres: s.nombres,
-                      apellidos: s.apellidos,
-                      telefono: s.telefono || ""
-                    });
-                    setModalOpen(true);
-                  }}
-                >
-                  <FaEdit />
-                </button>
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body p-2">
+          <div className="input-group">
+            <span className="input-group-text bg-white border-0">
+              <FaSearch className="text-muted" />
+            </span>
+            <input
+              type="text"
+              className="form-control border-0"
+              placeholder="Buscar por nombre, correo o estado..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
 
-                <button
-                  className="btn btn-sm btn-outline-danger"
-                  onClick={() => cambiarEstado(s)}
-                >
-                  <FaPowerOff />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div className="table-responsive">
+          <table className="table table-hover align-middle mb-0">
+            <thead className="bg-light">
+              <tr>
+                <th className="ps-4">Subadministrador</th>
+                <th>Contacto</th>
+                <th>Estado</th>
+                <th className="text-end pe-4">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="4" className="text-center py-5">
+                    <div className="spinner-border text-primary" role="status" />
+                  </td>
+                </tr>
+              ) : subadminsFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="text-center py-5 text-muted">
+                    No se encontraron subadministradores.
+                  </td>
+                </tr>
+              ) : (
+                subadminsFiltrados.map((s) => (
+                  <tr key={s.idSubadmin}>
+                    <td className="ps-4">
+                      <div className="d-flex align-items-center">
+                        <div
+                          className="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-3 fw-bold shadow-sm"
+                          style={{ width: "40px", height: "40px", fontSize: "0.9rem" }}
+                        >
+                          {s.nombres?.charAt(0)}{s.apellidos?.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="fw-bold text-dark">{s.nombres} {s.apellidos}</div>
+                          <small className="text-muted">ID: {s.idSubadmin}</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="d-flex flex-column small">
+                        <span className="text-secondary"><FaEnvelope className="me-1" /> {s.correo}</span>
+                        <span className="text-muted"><FaPhone className="me-1" /> {s.telefono || "No registrado"}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`badge ${s.estado === "ACTIVO" ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger"}`}>
+                        {s.estado}
+                      </span>
+                    </td>
+                    <td className="text-end pe-4">
+                      <div className="btn-group border rounded-3 overflow-hidden shadow-sm bg-white">
+                        <button className="btn btn-sm btn-white text-primary border-0 py-2" title="Editar" onClick={() => abrirEditar(s)}>
+                          <FaEdit />
+                        </button>
+                        <button className="btn btn-sm btn-white text-danger border-0 py-2" title="Cambiar estado" onClick={() => cambiarEstado(s)}>
+                          <FaPowerOff />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {!loading && totalSubadmins > 0 && (
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 gap-2">
-          <div className="text-muted small">
-            Mostrando {subadmins.length} de {totalSubadmins} subadmins
-          </div>
+          <div className="text-muted small">Mostrando {subadmins.length} de {totalSubadmins} subadmins</div>
           <div className="btn-group">
             <button className="btn btn-outline-secondary btn-sm" onClick={() => setPage(1)} disabled={page <= 1}>Primero</button>
-            <button className="btn btn-outline-secondary btn-sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>Anterior</button>
+            <button className="btn btn-outline-secondary btn-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Anterior</button>
             <span className="btn btn-light btn-sm disabled">Página {page} de {totalPages}</span>
-            <button className="btn btn-outline-secondary btn-sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Siguiente</button>
+            <button className="btn btn-outline-secondary btn-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Siguiente</button>
             <button className="btn btn-outline-secondary btn-sm" onClick={() => setPage(totalPages)} disabled={page >= totalPages}>Último</button>
           </div>
         </div>
       )}
 
-      {/* MODAL */}
       {modalOpen && (
-        <div className="modal fade show d-block">
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5>{editando ? "Editar Subadmin" : "Nuevo Subadmin"}</h5>
-                <button className="btn-close" onClick={cerrarModal} />
+        <div className="modal fade show d-block" style={{ backgroundColor: "rgba(0,0,0,0.55)" }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header bg-primary text-white">
+                <h5 className="modal-title fw-bold">{editando ? "Editar Subadmin" : "Nuevo Subadmin"}</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={cerrarModal} />
               </div>
 
               <div className="modal-body">
-
-                {/* DNI + BOTÓN CARGAR (solo al crear) */}
-                {!editando && (
-                  <div className="mb-3">
-                    <label className="form-label">DNI</label>
-                    <div className="d-flex gap-2">
-                      <input
-                        className="form-control"
-                        placeholder="DNI"
-                        value={form.dni}
-                        onChange={e => setField("dni", e.target.value.replace(/\D/g, "").slice(0, 8))}
-                        inputMode="numeric"
-                        maxLength={8}
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-outline-info"
-                        onClick={cargarPorDni}
-                      >
+                <div className="mb-3">
+                  <label className="form-label small fw-bold">DNI</label>
+                  <div className="input-group">
+                    <input
+                      className="form-control"
+                      placeholder="DNI"
+                      value={form.dni}
+                      onChange={(e) => setField("dni", e.target.value.replace(/\D/g, "").slice(0, 8))}
+                      inputMode="numeric"
+                      maxLength={8}
+                      disabled={Boolean(editando)}
+                    />
+                    {!editando && (
+                      <button type="button" className="btn btn-outline-info" onClick={cargarPorDni}>
                         Cargar
                       </button>
-                    </div>
+                    )}
                   </div>
-                )}
+                </div>
 
-                {/* RESTO DE CAMPOS */}
                 {["nombres", "apellidos", "correo", "telefono", "contrasena"]
-                  .filter(k => !editando || !["correo", "contrasena"].includes(k))
-                  .map(k => {
+                  .filter((k) => !editando || k !== "contrasena")
+                  .map((k) => {
                     const isTelefono = k === "telefono";
+                    const labels = {
+                      nombres: "Nombres",
+                      apellidos: "Apellidos",
+                      correo: "Correo",
+                      telefono: "Teléfono",
+                      contrasena: "Contraseña"
+                    };
+
                     return (
-                      <input
-                        key={k}
-                        className="form-control mb-2"
-                        placeholder={k}
-                        value={form[k]}
-                        onChange={e => setField(k, isTelefono ? e.target.value.replace(/\D/g, "").slice(0, 9) : e.target.value)}
-                        type={k === "contrasena" ? "password" : isTelefono ? "tel" : "text"}
-                        inputMode={isTelefono ? "numeric" : undefined}
-                        maxLength={isTelefono ? 9 : undefined}
-                      />
+                      <div className="mb-3" key={k}>
+                        <label className="form-label small fw-bold">{labels[k]}</label>
+                        <input
+                          className={`form-control ${k === "correo" && hasError("correo") ? "is-invalid" : ""}`}
+                          placeholder={labels[k]}
+                          value={form[k]}
+                          onChange={(e) =>
+                            handleFieldChange(k, isTelefono ? e.target.value.replace(/\D/g, "").slice(0, 9) : e.target.value)
+                          }
+                          type={k === "contrasena" ? "password" : isTelefono ? "tel" : "text"}
+                          inputMode={isTelefono ? "numeric" : undefined}
+                          maxLength={isTelefono ? 9 : undefined}
+                        />
+                        {k === "correo" && hasError("correo") && (
+                          <div className="invalid-feedback d-block">{fieldErrors.correo}</div>
+                        )}
+                      </div>
                     );
                   })}
-
               </div>
 
-              <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={cerrarModal}>
-                  Cancelar
-                </button>
-                <button
-                  className="btn btn-success"
-                  onClick={editando ? editarSubadmin : crearSubadmin}
-                >
+              <div className="modal-footer bg-light">
+                <button className="btn btn-secondary" onClick={cerrarModal}>Cancelar</button>
+                <button className="btn btn-primary px-4" onClick={editando ? editarSubadmin : crearSubadmin}>
                   {editando ? "Guardar cambios" : "Crear"}
                 </button>
               </div>
@@ -311,8 +390,6 @@ export default function SubAdministradores() {
           </div>
         </div>
       )}
-
-
     </div>
   );
 }

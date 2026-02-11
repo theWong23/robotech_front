@@ -1,24 +1,37 @@
 /* Color de fondo suave para todo el panel (evita el blanco puro que cansa la vista) */
+:root {
+  --navbar-offset: 76px;
+}
+
 .dashboard-container {
-  background-color: #f4f6f9; 
+  background-color: #f4f6f9;
+  min-height: calc(100vh - var(--navbar-offset));
+  height: calc(100vh - var(--navbar-offset));
+  overflow: hidden;
 }
 
 /* Ajustes para el wrapper del Sidebar */
 .sidebar-wrapper {
-  min-width: 250px;       /* Ancho mínimo para que no se aplaste */
-  max-width: 280px;       /* Ancho máximo */
+  min-width: 250px;       /* Ancho minimo para que no se aplaste */
+  max-width: 280px;       /* Ancho maximo */
   background-color: #ffffff;
   box-shadow: 2px 0 5px rgba(0,0,0,0.03); /* Sombra muy sutil a la derecha */
   z-index: 10;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100%;
+  overflow-y: auto;
 }
 
-/* Área de contenido */
+/* Area de contenido */
 .content-area {
+  height: 100%;
   overflow-y: auto; /* Permite scroll solo en el contenido si es muy largo */
-  max-height: calc(100vh - 76px); /* Altura pantalla menos altura aprox del Navbar */
+  max-height: none;
 }
 
-/* Animación suave al cambiar de sección */
+/* Animacion suave al cambiar de seccion */
 .fade-in-content {
   animation: fadeIn 0.4s ease-in-out;
 }
@@ -28,21 +41,30 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Responsividad (Móvil) --- */
+/* --- Responsividad (Movil) --- */
 @media (max-width: 768px) {
   .dashboard-container {
-    flex-direction: column; /* En móvil, el sidebar pasa arriba o se oculta */
+    flex-direction: column; /* En movil, el sidebar pasa arriba o se oculta */
+    min-height: auto;
+    height: auto;
+    overflow: visible;
   }
-  
+
   .sidebar-wrapper {
     width: 100%;
     max-width: 100%;
     border-right: none;
     border-bottom: 1px solid #dee2e6;
+    position: static;
+    top: auto;
+    height: auto;
+    overflow: visible;
   }
-  
+
   .content-area {
-    max-height: none; /* En móvil dejamos que el scroll sea natural */
+    height: auto;
+    max-height: none; /* En movil dejamos que el scroll sea natural */
+    overflow: visible;
   }
 }
 

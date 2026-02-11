@@ -47,18 +47,23 @@ export default function AdminCompetidores() {
   const cargarCompetidores = useCallback(async () => {
     setLoading(true);
     try {
-      const resComp = await api.get("/subadmin/competidores", {
+      const resComp = await api.get("/admin/usuarios", {
         params: {
           page: page - 1,
           size: PAGE_SIZE,
-          q: busqueda?.trim() || undefined
+          q: busqueda?.trim() || undefined,
+          role: "COMPETIDOR",
+          rol: "COMPETIDOR"
         }
       });
       const data = resComp.data || {};
       const content = Array.isArray(data.content) ? data.content : (Array.isArray(data) ? data : []);
-      setCompetidores(content);
+      const competidoresSolo = content.filter((u) =>
+        Array.isArray(u.roles) ? u.roles.includes("COMPETIDOR") : true
+      );
+      setCompetidores(competidoresSolo);
       setTotalPages(data.totalPages ?? 1);
-      setTotalCompetidores(data.totalElements ?? content.length);
+      setTotalCompetidores(data.totalElements ?? competidoresSolo.length);
     } catch (err) {
       Swal.fire("Error", "No se pudo sincronizar la información", "error");
     } finally {
@@ -135,10 +140,10 @@ export default function AdminCompetidores() {
       const telefonoLimpio = form.telefono && form.telefono.trim() !== "" ? form.telefono.trim() : null;
 
       if (!editingId) {
-        await api.post("/subadmin/competidores", { ...form, telefono: telefonoLimpio });
+        await api.post("/admin/competidores", { ...form, telefono: telefonoLimpio });
         Swal.fire({ icon: "success", title: "¡Registrado!", timer: 1500, showConfirmButton: false });
       } else {
-        await api.put(`/competidores/${editingId}`, {
+        await api.put(`/admin/competidores/${editingId}`, {
           nombres: form.nombre,
           apellidos: form.apellido,
           dni: form.dni,
@@ -362,3 +367,4 @@ export default function AdminCompetidores() {
     </div>
   );
 }
+
