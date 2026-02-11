@@ -38,13 +38,20 @@ export default function AdminLogin() {
 
       Swal.close();
 
-      // Normalizar rol (el backend devuelve "roles" como array)
-      const roles = Array.isArray(res.data.roles)
+      // Normalizar roles para soportar ADMINISTRADOR y ROLE_ADMINISTRADOR
+      const rawRoles = Array.isArray(res.data.roles)
         ? res.data.roles
-        : (res.data.rol ? [res.data.rol] : []);
+        : Array.isArray(res.data?.usuario?.roles)
+          ? res.data.usuario.roles
+          : (res.data.rol ? [res.data.rol] : []);
+
+      const normalizedRoles = rawRoles
+        .map((r) => String(r || "").trim().replace(/^ROLE_/, ""))
+        .filter(Boolean);
+
       const rol =
-        roles.includes("ADMINISTRADOR") ? "ADMINISTRADOR" :
-        roles.includes("SUBADMINISTRADOR") ? "SUBADMINISTRADOR" :
+        normalizedRoles.includes("ADMINISTRADOR") ? "ADMINISTRADOR" :
+        normalizedRoles.includes("SUBADMINISTRADOR") ? "SUBADMINISTRADOR" :
         "";
 
       // Centralizar manejo de sesión en el AuthProvider
