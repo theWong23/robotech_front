@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import api from "../../services/axiosConfig";
 import { FaPlus, FaPowerOff, FaEdit, FaUserShield, FaSearch, FaEnvelope, FaPhone } from "react-icons/fa";
@@ -9,7 +9,8 @@ export default function SubAdministradores() {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editando, setEditando] = useState(null);
-  const [busqueda, setBusqueda] = useState("");
+  const [filtros, setFiltros] = useState({ nombre: "", dni: "", estado: "" });
+  const [filtrosAplicados, setFiltrosAplicados] = useState({ nombre: "", dni: "", estado: "" });
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalSubadmins, setTotalSubadmins] = useState(0);
@@ -50,7 +51,10 @@ export default function SubAdministradores() {
       const res = await api.get("/admin/subadmins", {
         params: {
           page: page - 1,
-          size: 20
+          size: 20,
+          nombre: filtrosAplicados.nombre || undefined,
+          dni: filtrosAplicados.dni || undefined,
+          estado: filtrosAplicados.estado || undefined
         }
       });
       setSubadmins(res.data?.content || []);
@@ -65,23 +69,34 @@ export default function SubAdministradores() {
 
   useEffect(() => {
     cargarSubadmins();
-  }, [page]);
+  }, [page, filtrosAplicados.nombre, filtrosAplicados.dni, filtrosAplicados.estado]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages || 1);
   }, [page, totalPages]);
 
-  const subadminsFiltrados = useMemo(() => {
-    const q = busqueda.trim().toLowerCase();
-    if (!q) return subadmins;
+  const aplicarBusqueda = () => {
+    const next = {
+      nombre: filtros.nombre.trim(),
+      dni: filtros.dni.trim(),
+      estado: filtros.estado.trim()
+    };
+    if (
+      next.nombre === filtrosAplicados.nombre &&
+      next.dni === filtrosAplicados.dni &&
+      next.estado === filtrosAplicados.estado
+    ) return;
+    setPage(1);
+    setFiltrosAplicados(next);
+  };
 
-    return subadmins.filter((s) => {
-      const nombreCompleto = `${s.nombres || ""} ${s.apellidos || ""}`.toLowerCase();
-      const correo = (s.correo || "").toLowerCase();
-      const estado = (s.estado || "").toLowerCase();
-      return nombreCompleto.includes(q) || correo.includes(q) || estado.includes(q);
-    });
-  }, [subadmins, busqueda]);
+  const limpiarBusqueda = () => {
+    if (!filtros.nombre && !filtros.dni && !filtros.estado
+      && !filtrosAplicados.nombre && !filtrosAplicados.dni && !filtrosAplicados.estado) return;
+    setFiltros({ nombre: "", dni: "", estado: "" });
+    setPage(1);
+    setFiltrosAplicados({ nombre: "", dni: "", estado: "" });
+  };
 
   const cargarPorDni = async () => {
     try {
@@ -125,7 +140,8 @@ export default function SubAdministradores() {
       cerrarModal();
       cargarSubadmins();
     } catch (err) {
-      Swal.fire("Error", err.response?.data || "Error al crear", "error");
+      const msg = err.response?.data?.message || err.response?.data?.mensaje || err.response?.data || "Error al crear";
+      Swal.fire("Error", msg, "error");
     }
   };
 
@@ -218,18 +234,51 @@ export default function SubAdministradores() {
 
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body p-2">
-          <div className="input-group">
-            <span className="input-group-text bg-white border-0">
-              <FaSearch className="text-muted" />
-            </span>
-            <input
-              type="text"
-              className="form-control border-0"
-              placeholder="Buscar por nombre, correo o estado..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-            />
+          <div className="row g-2 align-items-end mb-2">
+            <div className="col-12 col-md-5">
+              <label className="form-label small fw-bold mb-1">Nombre</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Nombres o apellidos..."
+                value={filtros.nombre}
+                onChange={(e) => setFiltros(prev => ({ ...prev, nombre: e.target.value }))}
+                onKeyDown={(e) => { if (e.key === "Enter") aplicarBusqueda(); }}
+              />
+            </div>
+            <div className="col-12 col-md-3">
+              <label className="form-label small fw-bold mb-1">DNI</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Documento..."
+                value={filtros.dni}
+                onChange={(e) => setFiltros(prev => ({ ...prev, dni: e.target.value.replace(/\D/g, "").slice(0, 8) }))}
+                onKeyDown={(e) => { if (e.key === "Enter") aplicarBusqueda(); }}
+              />
+            </div>
+            <div className="col-12 col-md-2">
+              <label className="form-label small fw-bold mb-1">Estado</label>
+              <select
+                className="form-select"
+                value={filtros.estado}
+                onChange={(e) => setFiltros(prev => ({ ...prev, estado: e.target.value }))}
+              >
+                <option value="">Todos</option>
+                <option value="ACTIVO">ACTIVO</option>
+                <option value="INACTIVO">INACTIVO</option>
+              </select>
+            </div>
+            <div className="col-12 col-md-2 d-grid">
+              <button className="btn btn-primary mb-1" onClick={aplicarBusqueda}>
+                <FaSearch className="me-1" /> Buscar
+              </button>
+              <button className="btn btn-outline-secondary" onClick={limpiarBusqueda}>
+                Limpiar
+              </button>
+            </div>
           </div>
+          <small className="text-muted px-2">Filtra por nombre, DNI o estado y presiona Enter o Buscar.</small>
         </div>
       </div>
 
@@ -251,14 +300,14 @@ export default function SubAdministradores() {
                     <div className="spinner-border text-primary" role="status" />
                   </td>
                 </tr>
-              ) : subadminsFiltrados.length === 0 ? (
+              ) : subadmins.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="text-center py-5 text-muted">
                     No se encontraron subadministradores.
                   </td>
                 </tr>
               ) : (
-                subadminsFiltrados.map((s) => (
+                subadmins.map((s) => (
                   <tr key={s.idSubadmin}>
                     <td className="ps-4">
                       <div className="d-flex align-items-center">

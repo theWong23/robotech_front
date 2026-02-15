@@ -9,6 +9,15 @@ import { consultarDni } from "../../services/dniService";
 
 const ADMIN_ROLE = "ADMINISTRADOR";
 const ESTADOS = ["ACTIVO", "INACTIVO", "PENDIENTE"];
+const FILTRO_ROLES = ["ADMINISTRADOR", "SUBADMINISTRADOR", "JUEZ", "CLUB", "COMPETIDOR"];
+const getRoleBadgeClass = (role) => {
+  if (role === "ADMINISTRADOR") return "bg-dark text-white border-dark";
+  if (role === "SUBADMINISTRADOR") return "bg-primary-subtle text-primary-emphasis border-primary";
+  if (role === "JUEZ") return "bg-info-subtle text-info-emphasis border-info";
+  if (role === "CLUB") return "bg-warning-subtle text-warning-emphasis border-warning";
+  if (role === "COMPETIDOR") return "bg-success-subtle text-success-emphasis border-success";
+  return "bg-light text-secondary border-secondary";
+};
 
 export default function AdminUsuarios() {
   // ============================
@@ -16,7 +25,8 @@ export default function AdminUsuarios() {
   // ============================
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [busqueda, setBusqueda] = useState("");
+  const [filtros, setFiltros] = useState({ nombre: "", dni: "", rol: "" });
+  const [filtrosAplicados, setFiltrosAplicados] = useState({ nombre: "", dni: "", rol: "" });
   const [currentPass, setCurrentPass] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -36,6 +46,11 @@ export default function AdminUsuarios() {
 
   const [fieldErrors, setFieldErrors] = useState({});
   const hasError = (field) => Boolean(fieldErrors[field]);
+  const getFirstFieldError = (errors) => {
+    if (!errors || typeof errors !== "object") return null;
+    const values = Object.values(errors).filter(Boolean);
+    return values.length > 0 ? values[0] : null;
+  };
 
   // Formulario
   const [form, setForm] = useState({
@@ -87,7 +102,9 @@ export default function AdminUsuarios() {
         params: {
           page: page - 1,
           size: PAGE_SIZE,
-          q: busqueda?.trim() || undefined
+          nombre: filtrosAplicados.nombre || undefined,
+          dni: filtrosAplicados.dni || undefined,
+          rol: filtrosAplicados.rol || undefined
         }
       });
 
@@ -106,15 +123,34 @@ export default function AdminUsuarios() {
 
   useEffect(() => {
     cargar();
-  }, [page, busqueda]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [busqueda]);
+  }, [page, filtrosAplicados.nombre, filtrosAplicados.dni, filtrosAplicados.rol]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages || 1);
   }, [page, totalPages]);
+
+  const aplicarBusqueda = () => {
+    const next = {
+      nombre: filtros.nombre.trim(),
+      dni: filtros.dni.trim(),
+      rol: filtros.rol.trim()
+    };
+    if (
+      next.nombre === filtrosAplicados.nombre &&
+      next.dni === filtrosAplicados.dni &&
+      next.rol === filtrosAplicados.rol
+    ) return;
+    setPage(1);
+    setFiltrosAplicados(next);
+  };
+
+  const limpiarBusqueda = () => {
+    if (!filtros.nombre && !filtros.dni && !filtros.rol
+      && !filtrosAplicados.nombre && !filtrosAplicados.dni && !filtrosAplicados.rol) return;
+    setFiltros({ nombre: "", dni: "", rol: "" });
+    setPage(1);
+    setFiltrosAplicados({ nombre: "", dni: "", rol: "" });
+  };
 
   // ============================
   // GESTIÓN DE FORMULARIO
@@ -249,18 +285,15 @@ export default function AdminUsuarios() {
 
       console.log("RESPUESTA BACKEND:", res.data);
 
-      if (res.data?.fieldErrors) {
+      const backendFieldError = getFirstFieldError(res.data?.fieldErrors);
+      if (backendFieldError) {
         setFieldErrors(res.data.fieldErrors);
-
-        const mensaje = Object.values(res.data.fieldErrors)[0];
-
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: mensaje, // mensaje exacto del backend
+          text: backendFieldError,
           confirmButtonText: "Aceptar",
         });
-
         return;
       }
 
@@ -283,18 +316,15 @@ export default function AdminUsuarios() {
 
       const data = err.response?.data;
 
-      if (data?.fieldErrors) {
+      const backendFieldError = getFirstFieldError(data?.fieldErrors);
+      if (backendFieldError) {
         setFieldErrors(data.fieldErrors);
-
-        const mensaje = Object.values(data.fieldErrors)[0];
-
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: mensaje,
+          text: backendFieldError,
           confirmButtonText: "Aceptar",
         });
-
         return;
       }
 
@@ -391,16 +421,52 @@ export default function AdminUsuarios() {
       {/* SEARCH BAR */}
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body p-2">
-          <div className="input-group">
-            <span className="input-group-text bg-white border-0"><FaSearch className="text-muted"/></span>
-            <input 
-              type="text" 
-              className="form-control border-0" 
-              placeholder="Buscar por nombre, correo, rol..." 
-              value={busqueda}
-              onChange={e => setBusqueda(e.target.value)}
-            />
+          <div className="row g-2 align-items-end mb-2">
+            <div className="col-12 col-md-5">
+              <label className="form-label small fw-bold mb-1">Nombre</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Nombres o apellidos"
+                value={filtros.nombre}
+                onChange={e => setFiltros(prev => ({ ...prev, nombre: e.target.value }))}
+                onKeyDown={e => { if (e.key === "Enter") aplicarBusqueda(); }}
+              />
+            </div>
+            <div className="col-12 col-md-3">
+              <label className="form-label small fw-bold mb-1">DNI</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Documento"
+                value={filtros.dni}
+                onChange={e => setFiltros(prev => ({ ...prev, dni: e.target.value.replace(/\D/g, "").slice(0, 8) }))}
+                onKeyDown={e => { if (e.key === "Enter") aplicarBusqueda(); }}
+              />
+            </div>
+            <div className="col-12 col-md-2">
+              <label className="form-label small fw-bold mb-1">Rol</label>
+              <select
+                className="form-select"
+                value={filtros.rol}
+                onChange={e => setFiltros(prev => ({ ...prev, rol: e.target.value }))}
+              >
+                <option value="">Todos</option>
+                {FILTRO_ROLES.map((rol) => (
+                  <option key={rol} value={rol}>{rol}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-12 col-md-2 d-grid">
+              <button className="btn btn-primary mb-1" onClick={aplicarBusqueda}>
+                <FaSearch className="me-1" /> Buscar
+              </button>
+              <button className="btn btn-outline-secondary" onClick={limpiarBusqueda}>
+                Limpiar
+              </button>
+            </div>
           </div>
+          <small className="text-muted px-2">Filtra por campos y presiona Enter o Buscar.</small>
         </div>
       </div>
 
@@ -457,13 +523,18 @@ export default function AdminUsuarios() {
 
                       {/* COLUMNA ROL */}
                       <td>
-                        <span className={`badge rounded-pill border ${
-                          (u.roles || []).includes("ADMINISTRADOR") ? "bg-dark text-white border-dark" :
-                          (u.roles || []).includes("JUEZ") ? "bg-info-subtle text-info-emphasis border-info" :
-                          "bg-light text-secondary border-secondary"
-                        }`}>
-                          {(u.roles || []).join(', ')}
-                        </span>
+                        <div className="d-flex flex-wrap gap-1">
+                          {(u.roles || []).map((role) => (
+                            <span key={`${u.idUsuario}-${role}`} className={`badge rounded-pill border ${getRoleBadgeClass(role)}`}>
+                              {role}
+                            </span>
+                          ))}
+                          {(!u.roles || u.roles.length === 0) && (
+                            <span className="badge rounded-pill border bg-light text-secondary border-secondary">
+                              SIN_ROL
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* COLUMNA ESTADO */}
