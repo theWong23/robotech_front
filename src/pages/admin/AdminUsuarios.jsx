@@ -7,7 +7,6 @@ import {
 import api from "../../services/axiosConfig"; // Asegúrate de que apunte a tu configuración de axios
 import { consultarDni } from "../../services/dniService";
 
-const ROLES = ["ADMINISTRADOR", "SUBADMINISTRADOR", "JUEZ", "CLUB", "COMPETIDOR"];
 const ADMIN_ROLE = "ADMINISTRADOR";
 const ESTADOS = ["ACTIVO", "INACTIVO", "PENDIENTE"];
 
@@ -46,7 +45,7 @@ export default function AdminUsuarios() {
     correo: "",
     telefono: "",
     contrasena: "",
-    roles: [],
+    roles: [ADMIN_ROLE],
     estado: "ACTIVO",
   });
 
@@ -143,7 +142,7 @@ export default function AdminUsuarios() {
       correo: u.correo ?? "",
       telefono: u.telefono ?? "",
       contrasena: "",
-      roles: u.roles ?? [],
+      roles: u.roles ?? [ADMIN_ROLE],
       estado: u.estado ?? "ACTIVO",
     });
     setModal(true);
@@ -234,7 +233,8 @@ export default function AdminUsuarios() {
         apellidos: form.apellidos.trim(),
         correo: form.correo.trim(),
         telefono: form.telefono.trim(),
-        roles: isEditing ? form.roles : [ADMIN_ROLE],
+        // Blindaje: no permitir mutaciÃ³n de roles desde esta pantalla.
+        roles: isEditing ? undefined : [ADMIN_ROLE],
         estado: form.estado,
         ...( !isEditing && { contrasena: form.contrasena } )
       };
@@ -608,21 +608,11 @@ export default function AdminUsuarios() {
                   </div>
                   <div className="col-6">
                     <label className="form-label small fw-bold">Roles *</label>
-                    {isEditing ? (
-                      <select
-                        className="form-select"
-                        multiple
-                        value={form.roles}
-                        onChange={e => setForm({
-                          ...form,
-                          roles: Array.from(e.target.selectedOptions).map(o => o.value)
-                        })}
-                      >
-                        {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                      </select>
-                    ) : (
-                      <input className="form-control" value={ADMIN_ROLE} disabled />
-                    )}
+                    <input
+                      className="form-control"
+                      value={isEditing ? (form.roles || []).join(", ") || "Sin rol" : ADMIN_ROLE}
+                      disabled
+                    />
                   </div>
                   
                   {!isEditing && (
