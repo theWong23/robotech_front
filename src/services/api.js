@@ -51,7 +51,7 @@ api.interceptors.response.use(
   (error) => {
     const msg = normalizeErrorMessage(error);
     const status = error?.response?.status;
-    if (status === 401 || status === 403) {
+    if (status === 401) {
       if (typeof window !== "undefined") {
         const path = window.location.pathname || "";
         const isAdmin = path.startsWith("/admin");
@@ -69,6 +69,11 @@ api.interceptors.response.use(
           return Promise.reject(error);
         });
       }
+    }
+    if (status === 403) {
+      return Swal.fire("Acceso denegado", msg, "error").then(() =>
+        Promise.reject(error)
+      );
     }
     return Promise.reject(error);
   }

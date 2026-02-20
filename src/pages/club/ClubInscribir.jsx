@@ -17,7 +17,7 @@ export default function ClubInscribir() {
   // Cargar categoría DESDE el torneo
   // ----------------------------------
   useEffect(() => {
-    api.get(`/admin/torneos/${idTorneo}/categorias`)
+    api.get(`/club/torneos/${idTorneo}/categorias`)
       .then(res => {
         const encontrada = res.data.find(
           c => c.idCategoriaTorneo === idCategoriaTorneo

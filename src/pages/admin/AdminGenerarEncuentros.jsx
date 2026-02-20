@@ -20,6 +20,17 @@ export default function AdminGenerarEncuentros() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
 
+  const getNombreJuez = (j) => {
+    if (!j) return "";
+    if (j.nombreCompleto && j.nombreCompleto.trim()) return j.nombreCompleto.trim();
+    if (j.usuario) {
+      const nombre = `${j.usuario.nombres || ""} ${j.usuario.apellidos || ""}`.trim();
+      if (nombre) return nombre;
+    }
+    const nombreLegacy = `${j.nombres || ""} ${j.apellidos || ""}`.trim();
+    return nombreLegacy;
+  };
+
   // =========================
   // 1. CARGA INICIAL (Datos Auxiliares)
   // =========================
@@ -178,8 +189,8 @@ export default function AdminGenerarEncuentros() {
                   <option value="">Seleccione un juez...</option>
                   {jueces.map(j => (
                     <option key={j.idJuez} value={j.idJuez}>
-                      {j.nombreCompleto
-                        ? `${j.nombreCompleto} (${j.idJuez})`
+                      {getNombreJuez(j)
+                        ? `${getNombreJuez(j)} (${j.idJuez})`
                         : `Juez ID: ${j.idJuez}`}
                     </option>
                   ))}
